@@ -1,0 +1,66 @@
+# Xcode
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+xcschememanagement.plist
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Swift Package Manager
+.build/
+.swiftpm/
+*.resolved
+
+# Build artifacts
+build/
+export/
+release/
+*/build/
+*/export/
+*/release/
+
+# Sparkle
+*.delta
+*.dmg
+
+# Temporary files
+*.swp
+*~
+.#*
+
+# Development documentation (temporary dev notes)
+ARCHITECTURE.md
+CLOUDKIT_DASHBOARD_FIX.md
+FINAL_FIX.md
+FINAL_SUMMARY.md
+FIX_BOTH_APPS.md
+INTEGRATION_GUIDE.md
+PUSH_NOTIFICATIONS_GUIDE.md
+QUERYABLE_ERROR_EXPLAINED.md
+QUERY_FIX_APPLIED.md
+SETUP_CLOUDKIT.md
+SUCCESS.md
+SYNC_FIXES.md
+SYNC_IS_WORKING.md
+TEST_NOW.md
+VERIFICATION_STEPS.md
+GIT_STRATEGY.md
+OPEN_WORKSPACE.sh
+
+# Claude Code
+.claude/

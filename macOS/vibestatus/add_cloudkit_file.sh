@@ -1,0 +1,21 @@
+#!/bin/bash
+# Script to add CloudKitSyncManager.swift to the Xcode project
+
+echo "⚠️  This file needs to be added manually in Xcode"
+echo ""
+echo "Please follow these steps:"
+echo ""
+echo "1. Open VibeStatus.xcodeproj in Xcode"
+echo "2. In Project Navigator (left sidebar), find the 'VibeStatus' folder"
+echo "3. Right-click on the 'VibeStatus' folder"
+echo "4. Choose 'Add Files to \"VibeStatus\"...'"
+echo "5. Navigate to: /Users/mladjanantic/Work/VibeStatus/macOS/vibestatus/VibeStatus/"
+echo "6. Select: CloudKitSyncManager.swift"
+echo "7. IMPORTANT: UNCHECK 'Copy items if needed' (file is already in place)"
+echo "8. CHECK 'Create groups'"
+echo "9. CHECK 'Add to targets: VibeStatus'"
+echo "10. Click 'Add'"
+echo "11. Build again (Cmd+B)"
+echo ""
+echo "The file is located at:"
+echo "/Users/mladjanantic/Work/VibeStatus/macOS/vibestatus/VibeStatus/CloudKitSyncManager.swift"

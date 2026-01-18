@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>VibeStatus Updates</title>
+        <link>https://github.com/Vladimirbabic/vibestatus</link>
+        <description>Most recent updates to VibeStatus</description>
+        <language>en</language>
+        <item>
+            <title>Version 1.8</title>
+            <pubDate>Sat, 18 Jan 2026 17:50:00 +0000</pubDate>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>VibeStatus v1.8</h2>
+                <h3>Terminal.app Compatibility</h3>
+                <ul>
+                    <li>Fixed detection issues when running Claude Code from Terminal.app</li>
+                    <li>Improved process detection (case-insensitive, supports node process)</li>
+                    <li>Increased process tree walk depth for deeper shell hierarchies</li>
+                </ul>
+                <h3>UI Improvements</h3>
+                <ul>
+                    <li>Sidebar tabs now fully clickable</li>
+                    <li>Settings window uses black theme</li>
+                    <li>Removed Auto Show/Hide toggle (always on by default)</li>
+                </ul>
+                <h3>Bug Fixes</h3>
+                <ul>
+                    <li>Fixed crash when changing widget style</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://github.com/Vladimirbabic/vibestatus/releases/download/v1.8/VibeStatus-1.8.zip"
+                length="2997833"
+                type="application/octet-stream" />
+        </item>
+        <item>
+            <title>Version 1.6</title>
+            <pubDate>Sat, 18 Jan 2026 00:00:00 +0000</pubDate>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>1.6</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>VibeStatus v1.6</h2>
+                <h3>Bug Fixes</h3>
+                <ul>
+                    <li>Fixed widget showing "Run Claude" during long-running tasks</li>
+                    <li>Improved Claude process detection</li>
+                </ul>
+                <h3>Code Quality</h3>
+                <ul>
+                    <li>Major refactoring for production quality</li>
+                    <li>Improved documentation and architecture</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://github.com/Vladimirbabic/vibestatus/releases/download/v1.6/VibeStatus.zip"
+                length="3088686"
+                type="application/octet-stream" />
+        </item>
+        <item>
+            <title>Version 1.5</title>
+            <pubDate>Fri, 17 Jan 2026 20:45:00 +0000</pubDate>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>1.5</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>VibeStatus v1.5</h2>
+                <h3>Improved Multi-Terminal Display</h3>
+                <ul>
+                    <li>Individual session rows with project names</li>
+                    <li>See which folder/project each Claude session is working on</li>
+                    <li>Color-coded status indicator per session</li>
+                    <li>Compact multi-session widget layout</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://github.com/Vladimirbabic/vibestatus/releases/download/v1.5/VibeStatus.zip"
+                sparkle:edSignature="pgPp+in6Q/vKTS+nGawKqJbeVOV2GIYFElh19GZGdiML4BLWOFLeHRwF7OLVI53m8EYSbAcwLZ8mlgjim5pBAA=="
+                length="1137449"
+                type="application/octet-stream" />
+        </item>
+        <item>
+            <title>Version 1.4</title>
+            <pubDate>Fri, 17 Jan 2026 20:35:00 +0000</pubDate>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>VibeStatus v1.4</h2>
+                <h3>Multi-Terminal Support</h3>
+                <ul>
+                    <li>Track multiple Claude sessions simultaneously</li>
+                    <li>Aggregated status display (shows count when multiple sessions active)</li>
+                    <li>Per-session status files for independent tracking</li>
+                </ul>
+                <h3>Status Priority</h3>
+                <ul>
+                    <li>Input needed takes priority over working</li>
+                    <li>Working takes priority over idle</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://github.com/Vladimirbabic/vibestatus/releases/download/v1.4/VibeStatus.zip"
+                sparkle:edSignature="CN8cZhFJ8AT0QCmx/WkQ9zdtw1pHk9zBNRngszEHl+3J9fFurttY+kQySIek+dNIJFTW9XOUxJ5WaH3UnaaoBQ=="
+                length="1120264"
+                type="application/octet-stream" />
+        </item>
+        <item>
+            <title>Version 1.3</title>
+            <pubDate>Fri, 17 Jan 2026 14:15:00 +0000</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>1.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>VibeStatus v1.3</h2>
+                <h3>Sound Selection</h3>
+                <ul>
+                    <li>Choose from 12 system sounds for notifications</li>
+                    <li>Option to disable sounds entirely</li>
+                    <li>Test buttons to preview sounds</li>
+                </ul>
+                <h3>Claude Detection</h3>
+                <ul>
+                    <li>Automatically detects when Claude is not running</li>
+                    <li>Shows "Run Claude" status with gray indicator</li>
+                </ul>
+                <h3>UI Improvements</h3>
+                <ul>
+                    <li>Widget background: 80% black opacity (no glass effect)</li>
+                </ul>
+                <h3>Bug Fixes</h3>
+                <ul>
+                    <li>Fixed Sparkle updater crash</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://github.com/Vladimirbabic/vibestatus/releases/download/v1.3/VibeStatus.zip"
+                sparkle:edSignature="ogRtww+xEJLHmdBj+RZQkDduJIgu5qNUS13ZSYy9C46YctTGoJ9q1zjf/r78oyiiBz9xLo9kHlszxAKssccIAg=="
+                length="2960770"
+                type="application/octet-stream" />
+        </item>
+        <item>
+            <title>Version 1.1</title>
+            <pubDate>Fri, 17 Jan 2025 15:00:00 +0000</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>VibeStatus v1.1</h2>
+                <p>First signed and notarized release!</p>
+                <ul>
+                    <li>Signed with Developer ID</li>
+                    <li>Notarized by Apple - no Gatekeeper warnings</li>
+                    <li>App icon added</li>
+                    <li>Floating glass widget showing Claude's status</li>
+                    <li>Menu bar icon that changes based on status</li>
+                    <li>Sound notifications when Claude finishes</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://github.com/Vladimirbabic/vibestatus/releases/download/v1.1/VibeStatus-1.1.zip"
+                length="1145317"
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss>
