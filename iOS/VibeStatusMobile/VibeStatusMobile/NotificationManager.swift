@@ -4,7 +4,7 @@
 // Manages push notifications for iOS
 
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 import UIKit
 import Combine
 import VibeStatusShared
@@ -120,15 +120,13 @@ class NotificationManager: NSObject, ObservableObject {
     }
 
     /// Clears notifications for a specific session
-    func clearNotifications(for sessionId: String) {
-        let center = notificationCenter
-        center.getDeliveredNotifications { notifications in
-            let identifiers = notifications
-                .filter { $0.request.content.userInfo["sessionId"] as? String == sessionId }
-                .map { $0.request.identifier }
+    func clearNotifications(for sessionId: String) async {
+        let notifications = await notificationCenter.deliveredNotifications()
+        let identifiers = notifications
+            .filter { $0.request.content.userInfo["sessionId"] as? String == sessionId }
+            .map { $0.request.identifier }
 
-            center.removeDeliveredNotifications(withIdentifiers: identifiers)
-        }
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiers)
     }
 }
 

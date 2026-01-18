@@ -1,7 +1,7 @@
 // SettingsView.swift
 // VibeStatusMobile
 //
-// iOS settings screen
+// iOS settings screen with terminal aesthetic
 
 import SwiftUI
 import VibeStatusShared
@@ -13,162 +13,245 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                // iCloud Status Section
-                Section {
-                    HStack {
-                        Image(systemName: viewModel.iCloudAvailable ? "checkmark.icloud.fill" : "xmark.icloud.fill")
-                            .foregroundColor(viewModel.iCloudAvailable ? .green : .red)
-                            .font(.title2)
+            ZStack {
+                Color.terminalBackground
+                    .ignoresSafeArea()
 
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Header
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("iCloud")
-                                .font(.headline)
-                            Text(viewModel.iCloudAvailable ? "Connected" : "Not Connected")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Text("settings")
+                                .font(.terminalLargeTitle)
+                                .foregroundColor(.terminalGreen)
+
+                            Text("configure vibestatus")
+                                .font(.terminalCaption)
+                                .foregroundColor(.terminalSecondary)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 8)
+
+                        // Sync Status Section
+                        TerminalSectionHeader(title: "sync status")
+                            .padding(.horizontal, 20)
+
+                        TerminalRow(
+                            icon: {
+                                Image(systemName: viewModel.iCloudAvailable ? "checkmark.icloud" : "xmark.icloud")
+                                    .foregroundColor(viewModel.iCloudAvailable ? .terminalGreen : .terminalRed)
+                            },
+                            title: "icloud",
+                            subtitle: viewModel.iCloudAvailable ? "connected" : "not connected"
+                        )
+                        .padding(.horizontal, 20)
+
+                        if !viewModel.iCloudAvailable {
+                            Text("sign in to icloud in settings to sync with your mac.")
+                                .font(.terminalCaption)
+                                .foregroundColor(.terminalSecondary)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+
+                            Button(action: openSettings) {
+                                Text("[ open settings ]")
+                                    .font(.terminalBody)
+                                    .foregroundColor(.terminalGreen)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 12)
                         }
 
-                        Spacer()
-                    }
-                    .padding(.vertical, 8)
+                        TerminalDivider()
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
 
-                    if !viewModel.iCloudAvailable {
-                        Text("Sign in to iCloud in Settings to sync with your Mac.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        // Notifications Section
+                        TerminalSectionHeader(title: "notifications")
+                            .padding(.horizontal, 20)
 
-                        Button("Open Settings") {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
+                        TerminalRow(
+                            icon: {
+                                Image(systemName: notificationStatusIcon)
+                                    .foregroundColor(notificationStatusColor)
+                            },
+                            title: "push notifications",
+                            subtitle: notificationStatusText.lowercased()
+                        )
+                        .padding(.horizontal, 20)
+
+                        if notificationManager.authorizationStatus == .notDetermined {
+                            Button(action: {
+                                Task {
+                                    try? await notificationManager.requestAuthorization()
+                                }
+                            }) {
+                                Text("[ enable notifications ]")
+                                    .font(.terminalBody)
+                                    .foregroundColor(.terminalGreen)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 12)
+                        } else if notificationManager.authorizationStatus == .denied {
+                            Text("enable notifications in settings to get alerts when claude needs input.")
+                                .font(.terminalCaption)
+                                .foregroundColor(.terminalSecondary)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+
+                            Button(action: openSettings) {
+                                Text("[ open settings ]")
+                                    .font(.terminalBody)
+                                    .foregroundColor(.terminalGreen)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 12)
+                        }
+
+                        TerminalDivider()
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+
+                        // About Section
+                        TerminalSectionHeader(title: "about")
+                            .padding(.horizontal, 20)
+
+                        HStack {
+                            Text("version")
+                                .font(.terminalBody)
+                                .foregroundColor(.terminalGreen)
+                            Spacer()
+                            Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+                                .font(.terminalCaption)
+                                .foregroundColor(.terminalSecondary)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                        TerminalDivider()
+                            .padding(.horizontal, 20)
+
+                        HStack {
+                            Text("build")
+                                .font(.terminalBody)
+                                .foregroundColor(.terminalGreen)
+                            Spacer()
+                            Text(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+                                .font(.terminalCaption)
+                                .foregroundColor(.terminalSecondary)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                        TerminalDivider()
+                            .padding(.horizontal, 20)
+
+                        Link(destination: URL(string: "https://vibestatus.com")!) {
+                            HStack {
+                                Text("website")
+                                    .font(.terminalBody)
+                                    .foregroundColor(.terminalGreen)
+                                Spacer()
+                                Text("->")
+                                    .font(.terminalCaption)
+                                    .foregroundColor(.terminalSecondary)
                             }
                         }
-                    }
-                } header: {
-                    Text("Sync Status")
-                }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
 
-                // Notifications Section
-                Section {
-                    HStack {
-                        Image(systemName: notificationStatusIcon)
-                            .foregroundColor(notificationStatusColor)
-                            .font(.title2)
+                        // Debug Section
+                        #if DEBUG
+                        TerminalDivider()
+                            .padding(.horizontal, 20)
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Notifications")
-                                .font(.headline)
-                            Text(notificationStatusText)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                        TerminalSectionHeader(title: "debug")
+                            .padding(.horizontal, 20)
+
+                        Button(action: {
+                            notificationManager.clearAllNotifications()
+                        }) {
+                            Text("[ clear all notifications ]")
+                                .font(.terminalBody)
+                                .foregroundColor(.terminalGreen)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
 
-                        Spacer()
-                    }
-                    .padding(.vertical, 8)
-
-                    if notificationManager.authorizationStatus == .notDetermined {
-                        Button("Enable Notifications") {
+                        Button(action: {
                             Task {
-                                try? await notificationManager.requestAuthorization()
+                                await notificationManager.showSessionNotification(
+                                    project: "test-project",
+                                    status: .needsInput,
+                                    sessionId: "test-session"
+                                )
                             }
+                        }) {
+                            Text("[ test notification ]")
+                                .font(.terminalBody)
+                                .foregroundColor(.terminalGreen)
                         }
-                    } else if notificationManager.authorizationStatus == .denied {
-                        Text("Enable notifications in Settings to get alerts when Claude needs input.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
 
-                        Button("Open Settings") {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
+                        if let lastSync = viewModel.lastSyncDate {
+                            HStack {
+                                Text("last sync")
+                                    .font(.terminalBody)
+                                    .foregroundColor(.terminalGreen)
+                                Spacer()
+                                Text(formatDate(lastSync))
+                                    .font(.terminalCaption)
+                                    .foregroundColor(.terminalSecondary)
                             }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
                         }
+                        #endif
+
+                        Spacer(minLength: 40)
                     }
-                } header: {
-                    Text("Notifications")
                 }
-
-                // About Section
-                Section {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack {
-                        Text("Build")
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-                            .foregroundColor(.secondary)
-                    }
-
-                    Link(destination: URL(string: "https://vibestatus.com")!) {
-                        HStack {
-                            Text("Website")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                        }
-                    }
-                } header: {
-                    Text("About")
-                }
-
-                // Debug Section
-                #if DEBUG
-                Section {
-                    Button("Clear All Notifications") {
-                        notificationManager.clearAllNotifications()
-                    }
-
-                    Button("Test Notification") {
-                        Task {
-                            await notificationManager.showSessionNotification(
-                                project: "Test Project",
-                                status: .needsInput,
-                                sessionId: "test-session"
-                            )
-                        }
-                    }
-
-                    if let lastSync = viewModel.lastSyncDate {
-                        HStack {
-                            Text("Last Sync")
-                            Spacer()
-                            Text(formatDate(lastSync))
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                } header: {
-                    Text("Debug")
-                }
-                #endif
             }
-            .navigationTitle("Settings")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("settings")
+                        .font(.terminalHeadline)
+                        .foregroundColor(.terminalGreen)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Text("done")
+                            .font(.terminalCaption)
+                            .foregroundColor(.terminalGreen)
                     }
                 }
             }
+            .toolbarBackground(Color.terminalBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
+        .preferredColorScheme(.dark)
     }
 
-    // MARK: - Computed Properties
+    // MARK: - Helper Methods
+
+    private func openSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
 
     private var notificationStatusIcon: String {
         switch notificationManager.authorizationStatus {
         case .authorized:
-            return "checkmark.circle.fill"
+            return "checkmark.circle"
         case .denied:
-            return "xmark.circle.fill"
+            return "xmark.circle"
         case .notDetermined:
-            return "questionmark.circle.fill"
+            return "questionmark.circle"
         case .provisional:
             return "checkmark.circle"
         case .ephemeral:
@@ -181,38 +264,36 @@ struct SettingsView: View {
     private var notificationStatusColor: Color {
         switch notificationManager.authorizationStatus {
         case .authorized:
-            return .green
+            return .terminalGreen
         case .denied:
-            return .red
+            return .terminalRed
         case .notDetermined:
-            return .orange
+            return .terminalOrange
         case .provisional:
-            return .yellow
+            return .terminalGreen
         case .ephemeral:
-            return .blue
+            return .terminalBlue
         @unknown default:
-            return .gray
+            return .terminalSecondary
         }
     }
 
     private var notificationStatusText: String {
         switch notificationManager.authorizationStatus {
         case .authorized:
-            return "Enabled"
+            return "enabled"
         case .denied:
-            return "Disabled"
+            return "disabled"
         case .notDetermined:
-            return "Not Configured"
+            return "not configured"
         case .provisional:
-            return "Provisional"
+            return "provisional"
         case .ephemeral:
-            return "Temporary"
+            return "temporary"
         @unknown default:
-            return "Unknown"
+            return "unknown"
         }
     }
-
-    // MARK: - Helper Methods
 
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
