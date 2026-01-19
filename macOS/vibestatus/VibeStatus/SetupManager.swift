@@ -94,7 +94,7 @@ final class SetupManager: ObservableObject {
         idleSound = UserDefaults.standard.string(forKey: UserDefaultsKey.idleSound.rawValue)
             ?? NotificationSound.glass.rawValue
         needsInputSound = UserDefaults.standard.string(forKey: UserDefaultsKey.needsInputSound.rawValue)
-            ?? NotificationSound.hero.rawValue // More prominent sound for input needed
+            ?? NotificationSound.ping.rawValue // Clear, attention-grabbing sound for input needed
 
         widgetEnabled = UserDefaults.standard.object(forKey: UserDefaultsKey.widgetEnabled.rawValue) as? Bool ?? true
         widgetAutoShow = UserDefaults.standard.object(forKey: UserDefaultsKey.widgetAutoShow.rawValue) as? Bool ?? true
