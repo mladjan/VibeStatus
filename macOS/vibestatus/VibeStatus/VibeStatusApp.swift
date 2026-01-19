@@ -39,6 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private let statusManager = StatusManager.shared
     private let licenseManager = LicenseManager.shared
+    // TODO: Uncomment after adding ResponseHandler.swift to Xcode project
+    // private let responseHandler = ResponseHandler.shared
     private let widgetController = FloatingWidgetController()
     private var lastSessionCount: Int = 0
     private var cancellables = Set<AnyCancellable>()
@@ -64,6 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupSubscriptions()
         setupNotificationObservers()
         statusManager.start()
+        // TODO: Uncomment after adding ResponseHandler.swift to Xcode project
+        // responseHandler.start() // Start monitoring for iOS responses
 
         // Show widget if enabled (auto-show handles visibility based on sessions)
         if SetupManager.shared.widgetEnabled {
@@ -87,6 +91,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         statusManager.stop()
+        // TODO: Uncomment after adding ResponseHandler.swift to Xcode project
+        // responseHandler.stop()
         cancellables.removeAll()
     }
 

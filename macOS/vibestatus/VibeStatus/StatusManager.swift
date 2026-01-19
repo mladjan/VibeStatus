@@ -16,6 +16,7 @@
 
 import AppKit
 import Combine
+import VibeStatusShared
 
 /// Monitors Claude Code sessions and aggregates their status.
 ///
@@ -95,6 +96,60 @@ final class StatusManager: ObservableObject {
         }.value
 
         processUpdate(result)
+
+        // Check for prompt files and upload to CloudKit
+        await checkForPrompts()
+    }
+
+    /// Check for prompt files and upload them to CloudKit for iOS
+    private func checkForPrompts() async {
+        await Task.detached(priority: .utility) {
+            await Self.processPromptFiles()
+        }.value
+    }
+
+    /// Scans for prompt files and uploads them to CloudKit
+    private nonisolated static func processPromptFiles() async {
+        let fileManager = FileManager.default
+        let decoder = JSONDecoder()
+
+        guard let files = try? fileManager.contentsOfDirectory(atPath: "/tmp") else { return }
+
+        let promptFiles = files.filter { $0.hasPrefix("vibestatus-prompt-") && $0.hasSuffix(".json") }
+
+        for file in promptFiles {
+            let filePath = "/tmp/\(file)"
+
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: filePath))
+                let promptData = try decoder.decode(PromptData.self, from: data)
+
+                // Convert to PromptRecord
+                let formatter = ISO8601DateFormatter()
+                let timestamp = formatter.date(from: promptData.timestamp) ?? Date()
+
+                let promptRecord = PromptRecord(
+                    id: UUID().uuidString,
+                    sessionId: promptData.session_id,
+                    project: promptData.project,
+                    promptMessage: promptData.prompt_message,
+                    notificationType: promptData.notification_type,
+                    transcriptPath: promptData.transcript_path,
+                    transcriptExcerpt: promptData.transcript_excerpt,
+                    timestamp: timestamp,
+                    pid: promptData.pid
+                )
+
+                // Upload to CloudKit
+                await CloudKitManager.shared.uploadPrompt(promptRecord)
+
+                // Delete the local file after successful upload
+                try? fileManager.removeItem(atPath: filePath)
+
+            } catch {
+                print("[StatusManager] Failed to process prompt file \(file): \(error)")
+            }
+        }
     }
 
     /// Reads all status files from disk. Runs on background thread.
