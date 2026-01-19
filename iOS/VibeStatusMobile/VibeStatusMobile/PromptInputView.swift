@@ -122,11 +122,40 @@ private struct TranscriptSection: View {
     }
 
     private var cleanExcerpt: String {
-        // Basic cleanup of transcript excerpt
-        excerpt
-            .replacingOccurrences(of: "\\n", with: "\n")
-            .replacingOccurrences(of: "\\\"", with: "\"")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // Parse JSONL to extract last assistant message
+        let lines = excerpt.split(separator: "\n")
+        var lastAssistantMessage = ""
+
+        // Find last assistant message in JSONL
+        for line in lines.reversed() {
+            if let data = line.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let type = json["type"] as? String,
+               type == "assistant",
+               let message = json["message"] as? [String: Any],
+               let content = message["content"] as? [[String: Any]] {
+
+                // Extract text from content blocks
+                for block in content {
+                    if let text = block["text"] as? String {
+                        lastAssistantMessage = text
+                        break
+                    }
+                }
+
+                if !lastAssistantMessage.isEmpty {
+                    break
+                }
+            }
+        }
+
+        if !lastAssistantMessage.isEmpty {
+            // Limit to reasonable length
+            return String(lastAssistantMessage.prefix(500))
+        }
+
+        // Fallback: show raw but truncated
+        return String(excerpt.prefix(300)) + "..."
     }
 }
 
