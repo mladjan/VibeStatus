@@ -28,6 +28,9 @@ extension Color {
 
     /// Terminal blue for needs input
     static let terminalBlue = Color(red: 0.3, green: 0.6, blue: 1.0)
+
+    /// Terminal text - light gray for readable body text
+    static let terminalText = Color(white: 0.9)
 }
 
 // MARK: - Terminal Fonts
