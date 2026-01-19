@@ -311,6 +311,10 @@ public class CloudKitManager: ObservableObject {
             logger.info("Fetched \(prompts.count) pending prompts")
             return prompts
 
+        } catch let error as CKError where error.code == .unknownItem {
+            // Prompt record type doesn't exist yet - this is expected until first prompt is created
+            logger.debug("Prompt record type not found - waiting for first prompt from macOS")
+            return []
         } catch {
             logger.error("Failed to fetch prompts: \(error.localizedDescription)")
             await MainActor.run {
@@ -453,21 +457,28 @@ public class CloudKitManager: ObservableObject {
 
             // Create prompt subscription if it doesn't exist
             if !promptSubExists {
-                let promptSub = CKQuerySubscription(
-                    recordType: PromptRecord.recordType,
-                    predicate: NSPredicate(value: true),
-                    subscriptionID: CloudKitConstants.promptSubscriptionID,
-                    options: [.firesOnRecordCreation, .firesOnRecordUpdate]
-                )
+                do {
+                    let promptSub = CKQuerySubscription(
+                        recordType: PromptRecord.recordType,
+                        predicate: NSPredicate(value: true),
+                        subscriptionID: CloudKitConstants.promptSubscriptionID,
+                        options: [.firesOnRecordCreation, .firesOnRecordUpdate]
+                    )
 
-                let promptNotif = CKSubscription.NotificationInfo()
-                promptNotif.shouldSendContentAvailable = true
-                promptNotif.alertBody = "Claude needs your input"
-                promptNotif.soundName = "default"
-                promptSub.notificationInfo = promptNotif
+                    let promptNotif = CKSubscription.NotificationInfo()
+                    promptNotif.shouldSendContentAvailable = true
+                    promptNotif.alertBody = "Claude needs your input"
+                    promptNotif.soundName = "default"
+                    promptSub.notificationInfo = promptNotif
 
-                _ = try await privateDatabase.save(promptSub)
-                logger.info("Successfully created prompt subscription")
+                    _ = try await privateDatabase.save(promptSub)
+                    logger.info("Successfully created prompt subscription")
+                } catch let error as CKError where error.code == .unknownItem {
+                    // Prompt record type doesn't exist yet - this is expected on first run
+                    logger.info("Prompt record type not found - will be created when macOS uploads first prompt")
+                } catch {
+                    throw error
+                }
             }
 
             if sessionSubExists && promptSubExists {
