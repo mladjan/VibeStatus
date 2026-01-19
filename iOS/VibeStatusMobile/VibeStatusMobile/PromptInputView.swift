@@ -5,6 +5,7 @@
 // Shows conversation context and allows user to send response back to macOS
 
 import SwiftUI
+import Combine
 import VibeStatusShared
 
 struct PromptInputView: View {
