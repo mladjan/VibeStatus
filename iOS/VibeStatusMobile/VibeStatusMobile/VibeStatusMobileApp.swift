@@ -70,9 +70,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if let notification = CKNotification(fromRemoteNotificationDictionary: userInfo) as? CKQueryNotification {
             print("[AppDelegate] CloudKit notification received: \(notification)")
 
-            // Fetch the updated session and show notification
+            // Fetch the updated record and show notification
             Task {
-                // Fetch the updated session from CloudKit
                 if let recordID = notification.recordID {
                     print("[AppDelegate] Fetching updated record: \(recordID.recordName)")
 
@@ -81,19 +80,38 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                         let database = container.privateCloudDatabase
                         let record = try await database.record(for: recordID)
 
-                        if let sessionId = record["sessionId"] as? String,
-                           let statusString = record["status"] as? String,
-                           let status = VibeStatusShared.VibeStatus(rawValue: statusString),
-                           let project = record["project"] as? String {
+                        // Check if it's a session or prompt notification
+                        if record.recordType == "Session" {
+                            // Handle session update
+                            if let sessionId = record["sessionId"] as? String,
+                               let statusString = record["status"] as? String,
+                               let status = VibeStatusShared.VibeStatus(rawValue: statusString),
+                               let project = record["project"] as? String {
 
-                            print("[AppDelegate] Session updated: \(sessionId), status: \(statusString)")
+                                print("[AppDelegate] Session updated: \(sessionId), status: \(statusString)")
 
-                            // Show notification for status changes
-                            await NotificationManager.shared.showSessionNotification(
-                                project: project,
-                                status: status,
-                                sessionId: sessionId
-                            )
+                                await NotificationManager.shared.showSessionNotification(
+                                    project: project,
+                                    status: status,
+                                    sessionId: sessionId
+                                )
+                            }
+                        } else if record.recordType == "Prompt" {
+                            // Handle prompt notification
+                            if let promptMessage = record["promptMessage"] as? String,
+                               let project = record["project"] as? String {
+
+                                print("[AppDelegate] Prompt received for project: \(project)")
+
+                                // Show critical alert for prompt
+                                await NotificationManager.shared.showPromptNotification(
+                                    project: project,
+                                    message: promptMessage
+                                )
+
+                                // Trigger refresh to show in UI
+                                await CloudKitManager.shared.refreshPrompts()
+                            }
                         }
 
                         completionHandler(.newData)

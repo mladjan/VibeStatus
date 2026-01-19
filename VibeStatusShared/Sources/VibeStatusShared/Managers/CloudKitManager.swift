@@ -401,6 +401,11 @@ public class CloudKitManager: ObservableObject {
         }
     }
 
+    /// Convenience method for iOS to refresh prompts
+    public func refreshPrompts() async {
+        _ = await fetchPendingPrompts()
+    }
+
     // MARK: - Subscription Management
 
     /// Sets up CloudKit subscription for push notifications

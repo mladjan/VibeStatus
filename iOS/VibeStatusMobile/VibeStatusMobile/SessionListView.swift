@@ -10,6 +10,7 @@ import VibeStatusShared
 struct SessionListView: View {
     @StateObject private var viewModel = CloudKitViewModel()
     @State private var showingSettings = false
+    @State private var selectedPrompt: PromptRecord?
 
     var body: some View {
         NavigationView {
@@ -57,8 +58,17 @@ struct SessionListView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
+            .fullScreenCover(item: $selectedPrompt) { prompt in
+                PromptInputView(prompt: prompt)
+            }
             .task {
                 await viewModel.refreshSessions()
+            }
+            .onChange(of: viewModel.pendingPrompts) { prompts in
+                // Auto-show prompt input when new prompt arrives
+                if let firstPrompt = prompts.first, selectedPrompt == nil {
+                    selectedPrompt = firstPrompt
+                }
             }
         }
         .preferredColorScheme(.dark)

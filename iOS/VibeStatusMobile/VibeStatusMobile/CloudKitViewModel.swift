@@ -14,6 +14,7 @@ class CloudKitViewModel: ObservableObject {
     // MARK: - Published Properties
 
     @Published var sessions: [SessionInfo] = []
+    @Published var pendingPrompts: [PromptRecord] = []
     @Published var isLoading = false
     @Published var iCloudAvailable = false
     @Published var lastSyncDate: Date?
@@ -82,6 +83,20 @@ class CloudKitViewModel: ObservableObject {
                 .sorted { $0.timestamp > $1.timestamp }
             isLoading = false
             lastSyncDate = Date()
+        }
+
+        // Also fetch pending prompts
+        await refreshPrompts()
+    }
+
+    /// Fetches pending prompts from CloudKit
+    func refreshPrompts() async {
+        guard CloudKitManager.shared.iCloudAvailable else { return }
+
+        let prompts = await CloudKitManager.shared.fetchPendingPrompts()
+
+        await MainActor.run {
+            pendingPrompts = prompts.sorted { $0.timestamp > $1.timestamp }
         }
     }
 

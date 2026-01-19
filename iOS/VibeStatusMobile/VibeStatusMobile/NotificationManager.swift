@@ -114,6 +114,29 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
 
+    /// Shows a critical notification for a prompt that needs immediate user response
+    func showPromptNotification(project: String, message: String) async {
+        let content = UNMutableNotificationContent()
+
+        content.title = "🔴 Claude Needs Input"
+        content.body = "\(project): \(message.prefix(100))"
+        content.sound = .defaultCritical
+        content.interruptionLevel = .critical
+        content.categoryIdentifier = "PROMPT_INPUT"
+
+        let request = UNNotificationRequest(
+            identifier: "prompt-\(UUID().uuidString)",
+            content: content,
+            trigger: nil // Show immediately
+        )
+
+        do {
+            try await notificationCenter.add(request)
+        } catch {
+            print("[NotificationManager] Failed to show prompt notification: \(error)")
+        }
+    }
+
     /// Clears all delivered notifications
     func clearAllNotifications() {
         notificationCenter.removeAllDeliveredNotifications()
