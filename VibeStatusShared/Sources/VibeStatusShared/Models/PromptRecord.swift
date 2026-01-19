@@ -172,8 +172,19 @@ public struct PromptData: Codable {
     public let notification_type: String
     public let transcript_path: String?
     public let transcript_excerpt: String?
+    public let transcript_excerpt_base64: String?
     public let timestamp: String
     public let pid: Int?
+
+    /// Returns the decoded transcript excerpt (handles both plain and base64)
+    public var decodedTranscriptExcerpt: String? {
+        if let base64 = transcript_excerpt_base64,
+           let data = Data(base64Encoded: base64),
+           let decoded = String(data: data, encoding: .utf8) {
+            return decoded
+        }
+        return transcript_excerpt
+    }
 
     public init(
         session_id: String,
@@ -182,6 +193,7 @@ public struct PromptData: Codable {
         notification_type: String,
         transcript_path: String? = nil,
         transcript_excerpt: String? = nil,
+        transcript_excerpt_base64: String? = nil,
         timestamp: String,
         pid: Int? = nil
     ) {
@@ -191,6 +203,7 @@ public struct PromptData: Codable {
         self.notification_type = notification_type
         self.transcript_path = transcript_path
         self.transcript_excerpt = transcript_excerpt
+        self.transcript_excerpt_base64 = transcript_excerpt_base64
         self.timestamp = timestamp
         self.pid = pid
     }

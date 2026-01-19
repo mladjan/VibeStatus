@@ -135,7 +135,7 @@ final class StatusManager: ObservableObject {
                     promptMessage: promptData.prompt_message,
                     notificationType: promptData.notification_type,
                     transcriptPath: promptData.transcript_path,
-                    transcriptExcerpt: promptData.transcript_excerpt,
+                    transcriptExcerpt: promptData.decodedTranscriptExcerpt,
                     timestamp: timestamp,
                     pid: promptData.pid
                 )
