@@ -307,11 +307,17 @@ class PromptViewModel: ObservableObject {
 
     /// Parse options from prompt message
     /// Detects patterns like:
+    /// - Permission requests: "needs your permission to use X"
     /// - "1) Option A\n2) Option B"
     /// - "- Option A\n- Option B"
     /// - "[y/n]", "[yes/no]"
     static func parseOptions(from message: String) -> [String] {
         var options: [String] = []
+
+        // Check for permission request
+        if message.lowercased().contains("permission") {
+            return ["yes", "no", "always"]
+        }
 
         // Check for [y/n] or [yes/no] pattern
         if message.lowercased().contains("[y/n]") {
