@@ -262,6 +262,145 @@ public class CloudKitManager: ObservableObject {
         }
     }
 
+    // MARK: - Prompt Operations
+
+    /// Uploads a prompt to CloudKit (macOS → Cloud)
+    /// Called when Claude needs input from user
+    public func uploadPrompt(_ prompt: PromptRecord) async {
+        guard iCloudAvailable else {
+            logger.warning("Cannot upload prompt - iCloud not available")
+            return
+        }
+
+        do {
+            let record = prompt.toCKRecord()
+            _ = try await privateDatabase.save(record)
+            logger.info("Successfully uploaded prompt: \(prompt.id)")
+
+            await MainActor.run {
+                lastSyncDate = Date()
+            }
+        } catch {
+            logger.error("Failed to upload prompt: \(error.localizedDescription)")
+            await MainActor.run {
+                syncError = error
+            }
+        }
+    }
+
+    /// Fetches pending prompts (iOS fetches from Cloud)
+    /// Returns prompts that haven't been responded to yet
+    public func fetchPendingPrompts() async -> [PromptRecord] {
+        guard iCloudAvailable else {
+            logger.warning("Cannot fetch prompts - iCloud not available")
+            return []
+        }
+
+        do {
+            // Query for prompts without responses
+            let predicate = NSPredicate(format: "responseText == nil")
+            let query = CKQuery(recordType: PromptRecord.recordType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+
+            let results = try await privateDatabase.records(matching: query)
+            let prompts = results.matchResults.compactMap { (_, result) -> PromptRecord? in
+                guard case .success(let record) = result else { return nil }
+                return PromptRecord(from: record)
+            }
+
+            logger.info("Fetched \(prompts.count) pending prompts")
+            return prompts
+
+        } catch {
+            logger.error("Failed to fetch prompts: \(error.localizedDescription)")
+            await MainActor.run {
+                syncError = error
+            }
+            return []
+        }
+    }
+
+    /// Submits a response to a prompt (iOS → Cloud)
+    /// Updates the prompt record with user's response
+    public func submitResponse(promptId: String, responseText: String, deviceName: String) async -> Bool {
+        guard iCloudAvailable else {
+            logger.warning("Cannot submit response - iCloud not available")
+            return false
+        }
+
+        do {
+            // Fetch the existing prompt record
+            let recordID = CKRecord.ID(recordName: promptId)
+            let record = try await privateDatabase.record(for: recordID)
+
+            // Update with response
+            record["responseText"] = responseText as CKRecordValue
+            record["respondedAt"] = Date() as CKRecordValue
+            record["respondedFromDevice"] = deviceName as CKRecordValue
+
+            _ = try await privateDatabase.save(record)
+            logger.info("Successfully submitted response for prompt: \(promptId)")
+
+            await MainActor.run {
+                lastSyncDate = Date()
+            }
+
+            return true
+
+        } catch {
+            logger.error("Failed to submit response: \(error.localizedDescription)")
+            await MainActor.run {
+                syncError = error
+            }
+            return false
+        }
+    }
+
+    /// Fetches responses to prompts (macOS fetches from Cloud)
+    /// Returns prompts that have been responded to
+    public func fetchResponses(forSessionId sessionId: String) async -> [PromptRecord] {
+        guard iCloudAvailable else {
+            logger.warning("Cannot fetch responses - iCloud not available")
+            return []
+        }
+
+        do {
+            // Query for prompts with responses for this session
+            let predicate = NSPredicate(format: "sessionId == %@ AND responseText != nil", sessionId)
+            let query = CKQuery(recordType: PromptRecord.recordType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "respondedAt", ascending: false)]
+
+            let results = try await privateDatabase.records(matching: query)
+            let prompts = results.matchResults.compactMap { (_, result) -> PromptRecord? in
+                guard case .success(let record) = result else { return nil }
+                return PromptRecord(from: record)
+            }
+
+            logger.info("Fetched \(prompts.count) responses for session \(sessionId)")
+            return prompts
+
+        } catch {
+            logger.error("Failed to fetch responses: \(error.localizedDescription)")
+            await MainActor.run {
+                syncError = error
+            }
+            return []
+        }
+    }
+
+    /// Deletes a prompt record (cleanup after response is processed)
+    public func deletePrompt(_ promptId: String) async {
+        guard iCloudAvailable else { return }
+
+        do {
+            let recordID = CKRecord.ID(recordName: promptId)
+            _ = try await privateDatabase.deleteRecord(withID: recordID)
+            logger.info("Successfully deleted prompt: \(promptId)")
+        } catch {
+            logger.error("Failed to delete prompt: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Subscription Management
 
     /// Sets up CloudKit subscription for push notifications
@@ -278,32 +417,56 @@ public class CloudKitManager: ObservableObject {
         }
 
         do {
-            // Check if subscription already exists
+            // Check if subscriptions already exist
             let subscriptions = try await privateDatabase.allSubscriptions()
 
-            let subscriptionExists = subscriptions.contains { subscription in
+            let sessionSubExists = subscriptions.contains { subscription in
                 subscription.subscriptionID == CloudKitConstants.sessionSubscriptionID
             }
 
-            if subscriptionExists {
-                logger.info("CloudKit subscription already exists")
-                return
+            let promptSubExists = subscriptions.contains { subscription in
+                subscription.subscriptionID == CloudKitConstants.promptSubscriptionID
             }
 
-            // Create new subscription
-            let subscription = CKQuerySubscription(
-                recordType: SessionRecord.recordType,
-                predicate: NSPredicate(value: true),
-                subscriptionID: CloudKitConstants.sessionSubscriptionID,
-                options: [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
-            )
+            // Create session subscription if it doesn't exist
+            if !sessionSubExists {
+                let sessionSub = CKQuerySubscription(
+                    recordType: SessionRecord.recordType,
+                    predicate: NSPredicate(value: true),
+                    subscriptionID: CloudKitConstants.sessionSubscriptionID,
+                    options: [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
+                )
 
-            let notificationInfo = CKSubscription.NotificationInfo()
-            notificationInfo.shouldSendContentAvailable = true
-            subscription.notificationInfo = notificationInfo
+                let sessionNotif = CKSubscription.NotificationInfo()
+                sessionNotif.shouldSendContentAvailable = true
+                sessionSub.notificationInfo = sessionNotif
 
-            _ = try await privateDatabase.save(subscription)
-            logger.info("Successfully created CloudKit subscription")
+                _ = try await privateDatabase.save(sessionSub)
+                logger.info("Successfully created session subscription")
+            }
+
+            // Create prompt subscription if it doesn't exist
+            if !promptSubExists {
+                let promptSub = CKQuerySubscription(
+                    recordType: PromptRecord.recordType,
+                    predicate: NSPredicate(value: true),
+                    subscriptionID: CloudKitConstants.promptSubscriptionID,
+                    options: [.firesOnRecordCreation, .firesOnRecordUpdate]
+                )
+
+                let promptNotif = CKSubscription.NotificationInfo()
+                promptNotif.shouldSendContentAvailable = true
+                promptNotif.alertBody = "Claude needs your input"
+                promptNotif.soundName = "default"
+                promptSub.notificationInfo = promptNotif
+
+                _ = try await privateDatabase.save(promptSub)
+                logger.info("Successfully created prompt subscription")
+            }
+
+            if sessionSubExists && promptSubExists {
+                logger.info("CloudKit subscriptions already exist")
+            }
 
         } catch {
             logger.error("Failed to setup subscription: \(error.localizedDescription)")
@@ -313,7 +476,7 @@ public class CloudKitManager: ObservableObject {
         }
     }
 
-    /// Removes the CloudKit subscription
+    /// Removes the CloudKit subscriptions
     public func removeSubscription() async {
         guard iCloudAvailable else { return }
 
@@ -321,7 +484,10 @@ public class CloudKitManager: ObservableObject {
             _ = try await privateDatabase.deleteSubscription(
                 withID: CloudKitConstants.sessionSubscriptionID
             )
-            logger.info("Successfully removed CloudKit subscription")
+            _ = try await privateDatabase.deleteSubscription(
+                withID: CloudKitConstants.promptSubscriptionID
+            )
+            logger.info("Successfully removed CloudKit subscriptions")
         } catch {
             logger.error("Failed to remove subscription: \(error.localizedDescription)")
         }

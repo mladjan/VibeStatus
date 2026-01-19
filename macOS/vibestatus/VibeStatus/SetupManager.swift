@@ -258,7 +258,26 @@ final class SetupManager: ObservableObject {
             "Notification")
                 # Check if it's an idle_prompt notification
                 if echo "$INPUT" | grep -q "idle_prompt"; then
+                    # Update status to needs_input
                     echo "{\\"state\\":\\"needs_input\\",\\"project\\":\\"$PROJECT_NAME\\",\\"timestamp\\":\\"$TIMESTAMP\\",\\"pid\\":$CLAUDE_PID}" > "$STATUS_FILE"
+
+                    # Extract prompt details for iOS remote input
+                    PROMPT_MESSAGE=$(echo "$INPUT" | grep -o '"message":"[^"]*"' | cut -d'"' -f4 | sed 's/\\\\n/\\n/g')
+                    NOTIFICATION_TYPE=$(echo "$INPUT" | grep -o '"notification_type":"[^"]*"' | cut -d'"' -f4)
+                    TRANSCRIPT_PATH=$(echo "$INPUT" | grep -o '"transcript_path":"[^"]*"' | cut -d'"' -f4)
+
+                    # Create prompt file for CloudKit sync
+                    PROMPT_FILE="/tmp/vibestatus-prompt-${SESSION_ID}.json"
+
+                    # Read last few messages from transcript for context (if available)
+                    TRANSCRIPT_EXCERPT=""
+                    if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+                        # Extract last 3 messages from transcript (simplified - full parsing in app)
+                        TRANSCRIPT_EXCERPT=$(tail -c 2000 "$TRANSCRIPT_PATH" | tr -d '\\n' | sed 's/"/\\\\"/g')
+                    fi
+
+                    # Write prompt details
+                    echo "{\\"session_id\\":\\"$SESSION_ID\\",\\"project\\":\\"$PROJECT_NAME\\",\\"prompt_message\\":\\"$PROMPT_MESSAGE\\",\\"notification_type\\":\\"$NOTIFICATION_TYPE\\",\\"transcript_path\\":\\"$TRANSCRIPT_PATH\\",\\"transcript_excerpt\\":\\"$TRANSCRIPT_EXCERPT\\",\\"timestamp\\":\\"$TIMESTAMP\\",\\"pid\\":$CLAUDE_PID}" > "$PROMPT_FILE"
                 fi
                 ;;
             "SessionEnd")

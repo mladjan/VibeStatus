@@ -10,8 +10,11 @@ public enum CloudKitConstants {
     /// NOTE: This must match the identifier in both app's entitlements
     public static let containerIdentifier = "iCloud.com.mladjan.vibestatus"
 
-    /// Subscription ID for push notifications
+    /// Subscription ID for session push notifications
     public static let sessionSubscriptionID = "session-changes"
+
+    /// Subscription ID for prompt push notifications
+    public static let promptSubscriptionID = "prompt-changes"
 
     /// Zone name for custom CloudKit zone (optional, using default for now)
     public static let zoneName = "VibeStatusZone"
