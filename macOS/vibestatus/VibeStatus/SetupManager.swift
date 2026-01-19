@@ -127,6 +127,7 @@ final class SetupManager: ObservableObject {
         guard let settingsData = fileManager.contents(atPath: claudeSettingsPath),
               let settings = try? JSONSerialization.jsonObject(with: settingsData) as? [String: Any],
               let hooks = settings["hooks"] as? [String: Any],
+              hooks["SessionStart"] != nil,
               hooks["Stop"] != nil else {
             isConfigured = false
             return
@@ -168,8 +169,10 @@ final class SetupManager: ObservableObject {
            var settings = try? JSONSerialization.jsonObject(with: existingData) as? [String: Any],
            var hooks = settings["hooks"] as? [String: Any] {
 
+            hooks.removeValue(forKey: "SessionStart")
             hooks.removeValue(forKey: "UserPromptSubmit")
             hooks.removeValue(forKey: "Stop")
+            hooks.removeValue(forKey: "SessionEnd")
             hooks.removeValue(forKey: "Notification")
 
             if hooks.isEmpty {
@@ -242,6 +245,10 @@ final class SetupManager: ObservableObject {
         STATUS_FILE="/tmp/vibestatus-${SESSION_ID}.json"
 
         case "$HOOK_EVENT" in
+            "SessionStart")
+                # Session initialized - create status file immediately
+                echo "{\\"state\\":\\"idle\\",\\"project\\":\\"$PROJECT_NAME\\",\\"timestamp\\":\\"$TIMESTAMP\\",\\"pid\\":$CLAUDE_PID}" > "$STATUS_FILE"
+                ;;
             "UserPromptSubmit")
                 echo "{\\"state\\":\\"working\\",\\"project\\":\\"$PROJECT_NAME\\",\\"timestamp\\":\\"$TIMESTAMP\\",\\"pid\\":$CLAUDE_PID}" > "$STATUS_FILE"
                 ;;
@@ -253,6 +260,10 @@ final class SetupManager: ObservableObject {
                 if echo "$INPUT" | grep -q "idle_prompt"; then
                     echo "{\\"state\\":\\"needs_input\\",\\"project\\":\\"$PROJECT_NAME\\",\\"timestamp\\":\\"$TIMESTAMP\\",\\"pid\\":$CLAUDE_PID}" > "$STATUS_FILE"
                 fi
+                ;;
+            "SessionEnd")
+                # Session ended - remove status file for cleanup
+                rm -f "$STATUS_FILE"
                 ;;
         esac
 
@@ -291,8 +302,10 @@ final class SetupManager: ObservableObject {
             ]
         ]
 
+        hooks["SessionStart"] = hookConfig
         hooks["UserPromptSubmit"] = hookConfig
         hooks["Stop"] = hookConfig
+        hooks["SessionEnd"] = hookConfig
 
         hooks["Notification"] = [
             [

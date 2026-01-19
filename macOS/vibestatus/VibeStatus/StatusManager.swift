@@ -68,6 +68,9 @@ final class StatusManager: ObservableObject {
         pollingTask = Task { [weak self] in
             guard let self else { return }
 
+            // Note: Startup detection removed because hooks create status files immediately
+            // when Claude sessions start (via SessionStart hook). No need to scan for processes.
+
             await self.update()
 
             while !Task.isCancelled {
@@ -137,12 +140,8 @@ final class StatusManager: ObservableObject {
                     continue
                 }
 
-                // Only check PID if session is old (> 60s) to avoid false positives
-                // The hook's PPID may be a short-lived shell, not the main Claude process
-                if age > 60, let pid = status.pid, !isProcessRunning(pid: pid) {
-                    try? fileManager.removeItem(atPath: filePath)
-                    continue
-                }
+                // PID validation removed - SessionEnd hook now handles proper cleanup
+                // The timeout is sufficient to clean up stale sessions
 
                 sessions[file] = ParsedSession(status: status.state, project: project, timestamp: timestamp)
             } catch {
@@ -259,10 +258,6 @@ final class StatusManager: ObservableObject {
         NotificationSound(rawValue: soundName)?.play()
     }
 
-    /// Check if a process with the given PID is still running.
-    private nonisolated static func isProcessRunning(pid: Int) -> Bool {
-        kill(Int32(pid), 0) == 0
-    }
 }
 
 // MARK: - Internal Types

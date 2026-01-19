@@ -26,8 +26,8 @@ enum StatusFileConstants {
     /// File extension for status files
     static let fileExtension = ".json"
 
-    /// How long a session is considered valid without updates (5 minutes)
-    static let sessionTimeoutSeconds: TimeInterval = 300
+    /// How long a session is considered valid without updates (2 hours)
+    static let sessionTimeoutSeconds: TimeInterval = 7200
 
     /// How often to poll for status file changes (1 second)
     static let pollingIntervalSeconds: TimeInterval = 1.0
