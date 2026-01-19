@@ -297,8 +297,8 @@ public class CloudKitManager: ObservableObject {
         }
 
         do {
-            // Query for prompts without responses
-            let predicate = NSPredicate(format: "responseText == nil")
+            // Query for prompts without responses using boolean field
+            let predicate = NSPredicate(format: "responded == 0")
             let query = CKQuery(recordType: PromptRecord.recordType, predicate: predicate)
             query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
 
@@ -337,6 +337,7 @@ public class CloudKitManager: ObservableObject {
             record["responseText"] = responseText as CKRecordValue
             record["respondedAt"] = Date() as CKRecordValue
             record["respondedFromDevice"] = deviceName as CKRecordValue
+            record["responded"] = 1 as CKRecordValue // Mark as responded
 
             _ = try await privateDatabase.save(record)
             logger.info("Successfully submitted response for prompt: \(promptId)")
@@ -365,8 +366,8 @@ public class CloudKitManager: ObservableObject {
         }
 
         do {
-            // Query for prompts with responses for this session
-            let predicate = NSPredicate(format: "sessionId == %@ AND responseText != nil", sessionId)
+            // Query for prompts with responses for this session using boolean field
+            let predicate = NSPredicate(format: "sessionId == %@ AND responded == 1", sessionId)
             let query = CKQuery(recordType: PromptRecord.recordType, predicate: predicate)
             query.sortDescriptors = [NSSortDescriptor(key: "respondedAt", ascending: false)]
 

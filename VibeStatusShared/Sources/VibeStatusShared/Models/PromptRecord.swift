@@ -23,6 +23,7 @@ public struct PromptRecord: Identifiable, Equatable, Codable {
     public let responseText: String?
     public let respondedAt: Date?
     public let respondedFromDevice: String?
+    public let responded: Bool // Boolean flag for efficient CloudKit queries
 
     public init(
         id: String,
@@ -36,7 +37,8 @@ public struct PromptRecord: Identifiable, Equatable, Codable {
         pid: Int?,
         responseText: String? = nil,
         respondedAt: Date? = nil,
-        respondedFromDevice: String? = nil
+        respondedFromDevice: String? = nil,
+        responded: Bool = false
     ) {
         self.id = id
         self.sessionId = sessionId
@@ -50,6 +52,7 @@ public struct PromptRecord: Identifiable, Equatable, Codable {
         self.responseText = responseText
         self.respondedAt = respondedAt
         self.respondedFromDevice = respondedFromDevice
+        self.responded = responded
     }
 
     // MARK: - CloudKit Conversion
@@ -82,6 +85,7 @@ public struct PromptRecord: Identifiable, Equatable, Codable {
         self.responseText = record["responseText"] as? String
         self.respondedAt = record["respondedAt"] as? Date
         self.respondedFromDevice = record["respondedFromDevice"] as? String
+        self.responded = (record["responded"] as? Int == 1) // CloudKit stores booleans as Int64
     }
 
     /// Converts this PromptRecord to a CloudKit CKRecord
@@ -115,6 +119,9 @@ public struct PromptRecord: Identifiable, Equatable, Codable {
             record["respondedFromDevice"] = respondedFromDevice as CKRecordValue
         }
 
+        // Store boolean as Int64 for CloudKit compatibility
+        record["responded"] = (responded ? 1 : 0) as CKRecordValue
+
         return record
     }
 
@@ -145,6 +152,9 @@ public struct PromptRecord: Identifiable, Equatable, Codable {
         if let respondedFromDevice = respondedFromDevice {
             record["respondedFromDevice"] = respondedFromDevice as CKRecordValue
         }
+
+        // Store boolean as Int64 for CloudKit compatibility
+        record["responded"] = (responded ? 1 : 0) as CKRecordValue
     }
 
     /// Returns whether this prompt has been responded to
