@@ -95,6 +95,11 @@ class CloudKitViewModel: ObservableObject {
 
         let prompts = await CloudKitManager.shared.fetchPendingPrompts()
 
+        print("[CloudKitViewModel] Fetched \(prompts.count) pending prompts")
+        for prompt in prompts {
+            print("  - \(prompt.project): \(prompt.promptMessage)")
+        }
+
         await MainActor.run {
             pendingPrompts = prompts.sorted { $0.timestamp > $1.timestamp }
         }

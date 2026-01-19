@@ -16,6 +16,13 @@ struct PromptInputView: View {
     init(prompt: PromptRecord) {
         self.prompt = prompt
         _viewModel = StateObject(wrappedValue: PromptViewModel(prompt: prompt))
+
+        // Debug: Print prompt data
+        print("[PromptInputView] Showing prompt:")
+        print("  Project: \(prompt.project)")
+        print("  Message: \(prompt.promptMessage)")
+        print("  Transcript excerpt length: \(prompt.transcriptExcerpt?.count ?? 0)")
+        print("  Notification type: \(prompt.notificationType)")
     }
 
     var body: some View {

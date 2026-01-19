@@ -30,7 +30,7 @@ struct SessionListView: View {
                     } else if viewModel.sessions.isEmpty {
                         EmptyStateView()
                     } else {
-                        SessionsListContent(viewModel: viewModel)
+                        SessionsListContent(viewModel: viewModel, selectedPrompt: $selectedPrompt)
                     }
                 }
             }
@@ -79,6 +79,7 @@ struct SessionListView: View {
 
 private struct SessionsListContent: View {
     @ObservedObject var viewModel: CloudKitViewModel
+    @Binding var selectedPrompt: PromptRecord?
 
     var body: some View {
         ScrollView {
@@ -103,6 +104,14 @@ private struct SessionsListContent: View {
 
                 ForEach(viewModel.sessions) { session in
                     SessionRowView(session: session)
+                        .onTapGesture {
+                            // If session needs input, find and show the prompt
+                            if session.status == .needsInput,
+                               let prompt = viewModel.pendingPrompts.first(where: { $0.sessionId == session.id }) {
+                                selectedPrompt = prompt
+                            }
+                        }
+
                     TerminalDivider()
                         .padding(.horizontal, 20)
                 }
