@@ -10,6 +10,7 @@ struct SettingsView: View {
     @StateObject private var viewModel = CloudKitViewModel()
     @StateObject private var notificationManager = NotificationManager.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var silenceWhenNearby: Bool = NotificationManager.shared.silenceWhenNearby
 
     var body: some View {
         NavigationView {
@@ -112,6 +113,50 @@ struct SettingsView: View {
                         TerminalDivider()
                             .padding(.horizontal, 20)
                             .padding(.top, 8)
+
+                        // Proximity-based silencing toggle
+                        if notificationManager.authorizationStatus == .authorized {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Toggle(isOn: Binding(
+                                    get: { silenceWhenNearby },
+                                    set: { newValue in
+                                        silenceWhenNearby = newValue
+                                        notificationManager.silenceWhenNearby = newValue
+                                    }
+                                )) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Silence When Near Mac")
+                                            .font(.terminalBody)
+                                            .foregroundColor(.terminalText)
+                                        Text("Automatically silence notifications when your iPhone detects your Mac on the same network")
+                                            .font(.terminalCaption)
+                                            .foregroundColor(.terminalSecondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: .terminalOrange))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+
+                                if silenceWhenNearby {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "info.circle")
+                                            .foregroundColor(.terminalBlue)
+                                            .font(.caption)
+                                        Text("Works across multiple WiFi networks in the same location using Bonjour discovery")
+                                            .font(.terminalCaption)
+                                            .foregroundColor(.terminalSecondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 8)
+                                }
+                            }
+
+                            TerminalDivider()
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+                        }
 
                         // About Section
                         TerminalSectionHeader(title: "about")

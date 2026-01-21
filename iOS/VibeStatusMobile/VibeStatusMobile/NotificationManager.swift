@@ -24,6 +24,16 @@ class NotificationManager: NSObject, ObservableObject {
     // MARK: - Private Properties
 
     private let notificationCenter = UNUserNotificationCenter.current()
+    private let proximityDetector = ProximityDetector.shared
+
+    /// UserDefaults key for proximity-based silencing preference
+    private let silenceWhenNearbyKey = "silenceNotificationsWhenNearMac"
+
+    /// Whether to silence notifications when Mac is detected nearby
+    var silenceWhenNearby: Bool {
+        get { UserDefaults.standard.bool(forKey: silenceWhenNearbyKey) }
+        set { UserDefaults.standard.set(newValue, forKey: silenceWhenNearbyKey) }
+    }
 
     // MARK: - Initialization
 
@@ -74,6 +84,16 @@ class NotificationManager: NSObject, ObservableObject {
         status: VibeStatusShared.VibeStatus,
         sessionId: String
     ) async {
+        // Check if we should silence notifications due to proximity
+        if silenceWhenNearby {
+            let isMacNearby = await proximityDetector.checkMacProximity()
+            if isMacNearby {
+                print("[NotificationManager] 🔇 Silencing notification - Mac detected nearby")
+                print("[NotificationManager] Project: \(project), Status: \(status)")
+                return
+            }
+        }
+
         let content = UNMutableNotificationContent()
 
         switch status {
@@ -109,6 +129,7 @@ class NotificationManager: NSObject, ObservableObject {
 
         do {
             try await notificationCenter.add(request)
+            print("[NotificationManager] 📢 Notification shown for \(project)")
         } catch {
             print("[NotificationManager] Failed to show notification: \(error)")
         }
@@ -116,6 +137,16 @@ class NotificationManager: NSObject, ObservableObject {
 
     /// Shows a critical notification for a prompt that needs immediate user response
     func showPromptNotification(project: String, message: String) async {
+        // Check if we should silence notifications due to proximity
+        if silenceWhenNearby {
+            let isMacNearby = await proximityDetector.checkMacProximity()
+            if isMacNearby {
+                print("[NotificationManager] 🔇 Silencing prompt notification - Mac detected nearby")
+                print("[NotificationManager] Project: \(project)")
+                return
+            }
+        }
+
         let content = UNMutableNotificationContent()
 
         content.title = "🔴 Claude Needs Input"
@@ -132,6 +163,7 @@ class NotificationManager: NSObject, ObservableObject {
 
         do {
             try await notificationCenter.add(request)
+            print("[NotificationManager] 📢 Prompt notification shown for \(project)")
         } catch {
             print("[NotificationManager] Failed to show prompt notification: \(error)")
         }

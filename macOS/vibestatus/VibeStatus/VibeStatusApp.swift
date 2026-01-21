@@ -41,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let licenseManager = LicenseManager.shared
     private let responseHandler = ResponseHandler.shared
     private let widgetController = FloatingWidgetController()
+    private let bonjourService = BonjourService.shared
     private var lastSessionCount: Int = 0
     private var cancellables = Set<AnyCancellable>()
 
@@ -66,6 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupNotificationObservers()
         statusManager.start()
         responseHandler.start() // Start monitoring for iOS responses
+        bonjourService.startAdvertising() // Start Bonjour service for proximity detection
 
         // Show widget if enabled (auto-show handles visibility based on sessions)
         if SetupManager.shared.widgetEnabled {
@@ -90,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         statusManager.stop()
         responseHandler.stop()
+        bonjourService.stopAdvertising()
         cancellables.removeAll()
     }
 
