@@ -29,6 +29,9 @@ class NotificationManager: NSObject, ObservableObject {
     /// UserDefaults key for proximity-based silencing preference
     private let silenceWhenNearbyKey = "silenceNotificationsWhenNearMac"
 
+    /// Custom log prefix for easy filtering
+    private let logPrefix = "[🔇 NOTIFICATIONS]"
+
     /// Whether to silence notifications when Mac is detected nearby
     var silenceWhenNearby: Bool {
         get { UserDefaults.standard.bool(forKey: silenceWhenNearbyKey) }
@@ -84,14 +87,25 @@ class NotificationManager: NSObject, ObservableObject {
         status: VibeStatusShared.VibeStatus,
         sessionId: String
     ) async {
+        print("\(logPrefix) ═══ Notification request ═══")
+        print("\(logPrefix) Project: \(project)")
+        print("\(logPrefix) Status: \(status)")
+        print("\(logPrefix) Silence when nearby: \(silenceWhenNearby)")
+
         // Check if we should silence notifications due to proximity
         if silenceWhenNearby {
+            print("\(logPrefix) Checking Mac proximity...")
             let isMacNearby = await proximityDetector.checkMacProximity()
+
             if isMacNearby {
-                print("[NotificationManager] 🔇 Silencing notification - Mac detected nearby")
-                print("[NotificationManager] Project: \(project), Status: \(status)")
+                print("\(logPrefix) 🔇 NOTIFICATION SILENCED - Mac detected nearby")
+                print("\(logPrefix) User is at their desk, notification not shown")
                 return
+            } else {
+                print("\(logPrefix) Mac not detected - showing notification")
             }
+        } else {
+            print("\(logPrefix) Proximity check disabled - showing notification")
         }
 
         let content = UNMutableNotificationContent()
@@ -129,22 +143,33 @@ class NotificationManager: NSObject, ObservableObject {
 
         do {
             try await notificationCenter.add(request)
-            print("[NotificationManager] 📢 Notification shown for \(project)")
+            print("\(logPrefix) 📢 Notification shown for \(project)")
         } catch {
-            print("[NotificationManager] Failed to show notification: \(error)")
+            print("\(logPrefix) ❌ Failed to show notification: \(error)")
         }
     }
 
     /// Shows a critical notification for a prompt that needs immediate user response
     func showPromptNotification(project: String, message: String) async {
+        print("\(logPrefix) ═══ Prompt notification request ═══")
+        print("\(logPrefix) Project: \(project)")
+        print("\(logPrefix) Message: \(message.prefix(50))...")
+        print("\(logPrefix) Silence when nearby: \(silenceWhenNearby)")
+
         // Check if we should silence notifications due to proximity
         if silenceWhenNearby {
+            print("\(logPrefix) Checking Mac proximity...")
             let isMacNearby = await proximityDetector.checkMacProximity()
+
             if isMacNearby {
-                print("[NotificationManager] 🔇 Silencing prompt notification - Mac detected nearby")
-                print("[NotificationManager] Project: \(project)")
+                print("\(logPrefix) 🔇 PROMPT NOTIFICATION SILENCED - Mac detected nearby")
+                print("\(logPrefix) User is at their desk, prompt notification not shown")
                 return
+            } else {
+                print("\(logPrefix) Mac not detected - showing prompt notification")
             }
+        } else {
+            print("\(logPrefix) Proximity check disabled - showing prompt notification")
         }
 
         let content = UNMutableNotificationContent()
@@ -163,9 +188,9 @@ class NotificationManager: NSObject, ObservableObject {
 
         do {
             try await notificationCenter.add(request)
-            print("[NotificationManager] 📢 Prompt notification shown for \(project)")
+            print("\(logPrefix) 📢 Prompt notification shown for \(project)")
         } catch {
-            print("[NotificationManager] Failed to show prompt notification: \(error)")
+            print("\(logPrefix) ❌ Failed to show prompt notification: \(error)")
         }
     }
 

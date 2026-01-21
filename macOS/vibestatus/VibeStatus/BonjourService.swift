@@ -27,6 +27,9 @@ final class BonjourService {
     /// Whether the service is currently advertising
     private(set) var isAdvertising = false
 
+    /// Custom log prefix for easy filtering
+    private let logPrefix = "[🔇 BONJOUR-MAC]"
+
     // MARK: - Initialization
 
     private init() {}
@@ -36,16 +39,20 @@ final class BonjourService {
     /// Start advertising the Bonjour service
     func startAdvertising() {
         guard !isAdvertising else {
-            print("[BonjourService] Already advertising")
+            print("\(logPrefix) Already advertising")
             return
         }
+
+        print("\(logPrefix) ═══ Starting Bonjour service ═══")
+        print("\(logPrefix) Service name: '\(serviceName)'")
+        print("\(logPrefix) Service type: \(serviceType)")
 
         // Create NetService with a dummy port (0 = system assigns)
         // We don't actually open a port, just advertise presence
         netService = NetService(domain: "", type: serviceType, name: serviceName, port: 0)
 
         guard let service = netService else {
-            print("[BonjourService] ❌ Failed to create NetService")
+            print("\(logPrefix) ❌ Failed to create NetService")
             return
         }
 
@@ -53,14 +60,14 @@ final class BonjourService {
         service.publish()
         isAdvertising = true
 
-        print("[BonjourService] ✅ Started advertising as '\(serviceName)'")
-        print("[BonjourService] Service type: \(serviceType)")
+        print("\(logPrefix) ✅ Bonjour service started - iOS devices can now detect this Mac")
+        print("\(logPrefix) iOS devices on same network will see: '\(serviceName)'")
     }
 
     /// Stop advertising the Bonjour service
     func stopAdvertising() {
         guard isAdvertising else {
-            print("[BonjourService] Not advertising")
+            print("\(logPrefix) Not advertising")
             return
         }
 
@@ -68,6 +75,6 @@ final class BonjourService {
         netService = nil
         isAdvertising = false
 
-        print("[BonjourService] ⏹️ Stopped advertising")
+        print("\(logPrefix) ⏹️ Bonjour service stopped")
     }
 }

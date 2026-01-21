@@ -9,8 +9,10 @@ import VibeStatusShared
 struct SettingsView: View {
     @StateObject private var viewModel = CloudKitViewModel()
     @StateObject private var notificationManager = NotificationManager.shared
+    @StateObject private var proximityDetector = ProximityDetector.shared
     @Environment(\.dismiss) private var dismiss
     @State private var silenceWhenNearby: Bool = NotificationManager.shared.silenceWhenNearby
+    @State private var isTestingProximity: Bool = false
 
     var body: some View {
         NavigationView {
@@ -147,6 +149,69 @@ struct SettingsView: View {
                                             .font(.terminalCaption)
                                             .foregroundColor(.terminalSecondary)
                                             .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 8)
+
+                                    // Mac Detection Status
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Mac Detection Status")
+                                            .font(.terminalSection)
+                                            .foregroundColor(.terminalText)
+
+                                        HStack(spacing: 12) {
+                                            Circle()
+                                                .fill(proximityDetector.isMacNearby ? .statusGreen : .terminalSecondary)
+                                                .frame(width: 12, height: 12)
+
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(proximityDetector.isMacNearby ? "Mac Detected" : "Mac Not Detected")
+                                                    .font(.terminalBody)
+                                                    .foregroundColor(.terminalText)
+
+                                                if let lastDetection = proximityDetector.lastDetectionDate {
+                                                    Text("Last detected: \(formatRelativeTime(lastDetection))")
+                                                        .font(.terminalCaption)
+                                                        .foregroundColor(.terminalSecondary)
+                                                }
+
+                                                if proximityDetector.servicesFound > 0 {
+                                                    Text("\(proximityDetector.servicesFound) service(s) found")
+                                                        .font(.terminalCaption)
+                                                        .foregroundColor(.terminalSecondary)
+                                                }
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .padding(12)
+                                        .background(Color.cardBackground)
+                                        .cornerRadius(8)
+
+                                        Button(action: {
+                                            Task {
+                                                isTestingProximity = true
+                                                _ = await proximityDetector.checkMacProximity()
+                                                isTestingProximity = false
+                                            }
+                                        }) {
+                                            HStack {
+                                                if isTestingProximity {
+                                                    ProgressView()
+                                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                        .scaleEffect(0.8)
+                                                } else {
+                                                    Image(systemName: "antenna.radiowaves.left.and.right")
+                                                }
+                                                Text(isTestingProximity ? "Searching..." : "Test Mac Detection")
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .padding(12)
+                                            .background(Color.terminalOrange)
+                                            .foregroundColor(.white)
+                                            .cornerRadius(8)
+                                        }
+                                        .disabled(isTestingProximity)
                                     }
                                     .padding(.horizontal, 20)
                                     .padding(.bottom, 8)
@@ -345,6 +410,12 @@ struct SettingsView: View {
         formatter.dateStyle = .short
         formatter.timeStyle = .medium
         return formatter.string(from: date)
+    }
+
+    private func formatRelativeTime(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

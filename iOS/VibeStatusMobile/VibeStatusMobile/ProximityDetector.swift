@@ -19,6 +19,12 @@ final class ProximityDetector: ObservableObject {
     /// Whether the Mac is currently detected on local network
     @Published private(set) var isMacNearby: Bool = false
 
+    /// Last time Mac was detected
+    @Published private(set) var lastDetectionDate: Date?
+
+    /// Number of services discovered in last check
+    @Published private(set) var servicesFound: Int = 0
+
     /// Browser for discovering Bonjour services
     private var browser: NWBrowser?
 
@@ -31,6 +37,9 @@ final class ProximityDetector: ObservableObject {
     /// How long to wait for discovery results before assuming Mac is away
     private let discoveryTimeout: TimeInterval = 3.0
 
+    /// Custom log prefix for easy filtering
+    private let logPrefix = "[🔇 PROXIMITY]"
+
     // MARK: - Initialization
 
     private init() {}
@@ -40,11 +49,12 @@ final class ProximityDetector: ObservableObject {
     /// Start discovering Mac on local network
     func startDiscovery() {
         guard !isDiscovering else {
-            print("[ProximityDetector] Already discovering")
+            print("\(logPrefix) Already discovering")
             return
         }
 
-        print("[ProximityDetector] 🔍 Starting discovery for \(serviceType)")
+        print("\(logPrefix) 🔍 Starting discovery for \(serviceType)")
+        print("\(logPrefix) Discovery timeout: \(discoveryTimeout)s")
 
         // Create browser for Bonjour service
         let parameters = NWParameters()
@@ -53,7 +63,7 @@ final class ProximityDetector: ObservableObject {
         browser = NWBrowser(for: .bonjour(type: serviceType, domain: nil), using: parameters)
 
         guard let browser = browser else {
-            print("[ProximityDetector] ❌ Failed to create browser")
+            print("\(logPrefix) ❌ Failed to create browser")
             return
         }
 
@@ -79,21 +89,23 @@ final class ProximityDetector: ObservableObject {
     /// Stop discovering Mac
     func stopDiscovery() {
         guard isDiscovering else {
-            print("[ProximityDetector] Not discovering")
+            print("\(logPrefix) Not discovering")
             return
         }
 
-        print("[ProximityDetector] ⏹️ Stopping discovery")
+        print("\(logPrefix) ⏹️ Stopping discovery")
+        print("\(logPrefix) Final state - Mac nearby: \(isMacNearby), Services found: \(servicesFound)")
 
         browser?.cancel()
         browser = nil
         isDiscovering = false
-        isMacNearby = false
     }
 
     /// Perform a one-time check if Mac is nearby
     /// Returns true if Mac is detected within timeout period
     func checkMacProximity() async -> Bool {
+        print("\(logPrefix) ═══ Starting proximity check ═══")
+
         return await withCheckedContinuation { continuation in
             // Start discovery
             startDiscovery()
@@ -103,7 +115,13 @@ final class ProximityDetector: ObservableObject {
                 try? await Task.sleep(nanoseconds: UInt64(discoveryTimeout * 1_000_000_000))
 
                 let result = self.isMacNearby
-                print("[ProximityDetector] One-time check result: \(result ? "Mac nearby" : "Mac away")")
+                print("\(logPrefix) ═══ Check complete ═══")
+                print("\(logPrefix) Result: \(result ? "✅ Mac nearby" : "❌ Mac away")")
+                print("\(logPrefix) Services found: \(self.servicesFound)")
+
+                if result {
+                    self.lastDetectionDate = Date()
+                }
 
                 // Stop discovery after check
                 self.stopDiscovery()
@@ -118,13 +136,18 @@ final class ProximityDetector: ObservableObject {
     private func handleBrowserStateChange(_ newState: NWBrowser.State) {
         switch newState {
         case .ready:
-            print("[ProximityDetector] ✅ Browser ready")
+            print("\(logPrefix) ✅ Browser ready - scanning for services...")
         case .failed(let error):
-            print("[ProximityDetector] ❌ Browser failed: \(error)")
+            print("\(logPrefix) ❌ Browser failed: \(error)")
+            print("\(logPrefix) Check: Local Network permission granted?")
+            print("\(logPrefix) Check: Mac app running with Bonjour service?")
             isMacNearby = false
+            servicesFound = 0
         case .cancelled:
-            print("[ProximityDetector] Browser cancelled")
+            print("\(logPrefix) Browser cancelled")
             isMacNearby = false
+        case .waiting(let error):
+            print("\(logPrefix) ⏳ Browser waiting: \(error)")
         default:
             break
         }
@@ -132,19 +155,24 @@ final class ProximityDetector: ObservableObject {
 
     private func handleBrowseResults(_ results: Set<NWBrowser.Result>) {
         let wasNearby = isMacNearby
+        let previousCount = servicesFound
+
         isMacNearby = !results.isEmpty
+        servicesFound = results.count
+
+        if servicesFound != previousCount {
+            print("\(logPrefix) 📡 Services found: \(servicesFound)")
+        }
 
         if isMacNearby != wasNearby {
             if isMacNearby {
-                print("[ProximityDetector] ✅ Mac detected on local network")
-                if let firstResult = results.first {
-                    print("[ProximityDetector] Service: \(firstResult.endpoint)")
+                print("\(logPrefix) ✅ Mac detected on local network!")
+                for (index, result) in results.enumerated() {
+                    print("\(logPrefix) Service \(index + 1): \(result.endpoint)")
                 }
             } else {
-                print("[ProximityDetector] ⚠️ Mac no longer detected")
+                print("\(logPrefix) ⚠️ Mac no longer detected")
             }
         }
-
-        print("[ProximityDetector] Active services: \(results.count)")
     }
 }
