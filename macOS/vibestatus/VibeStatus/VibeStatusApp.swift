@@ -67,7 +67,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupNotificationObservers()
         statusManager.start()
         responseHandler.start() // Start monitoring for iOS responses
-        bonjourService.startAdvertising() // Start Bonjour service for proximity detection
+
+        // Start Bonjour service for proximity detection
+        print("[VibeStatusApp] About to start Bonjour service...")
+        bonjourService.startAdvertising()
+        print("[VibeStatusApp] Bonjour service advertising: \(bonjourService.isAdvertising)")
 
         // Show widget if enabled (auto-show handles visibility based on sessions)
         if SetupManager.shared.widgetEnabled {
