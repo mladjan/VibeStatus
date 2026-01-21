@@ -19,7 +19,10 @@ struct SessionListView: View {
                     .ignoresSafeArea()
 
                 Group {
-                    if viewModel.isLoading && viewModel.sessions.isEmpty {
+                    if !viewModel.sessions.isEmpty {
+                        // Always show list when sessions exist (even during loading/errors)
+                        SessionsListContent(viewModel: viewModel, selectedPrompt: $selectedPrompt)
+                    } else if viewModel.isLoading {
                         LoadingView()
                     } else if let error = viewModel.errorMessage {
                         ErrorView(message: error) {
@@ -27,26 +30,19 @@ struct SessionListView: View {
                                 await viewModel.refreshSessions()
                             }
                         }
-                    } else if viewModel.sessions.isEmpty {
-                        EmptyStateView()
                     } else {
-                        SessionsListContent(viewModel: viewModel, selectedPrompt: $selectedPrompt)
+                        EmptyStateView()
                     }
                 }
             }
-            .navigationTitle("")
+            .navigationTitle("VibeStatus")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("vibestatus")
-                        .font(.terminalHeadline)
-                        .foregroundColor(.terminalGreen)
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingSettings = true }) {
-                        Text("settings")
-                            .font(.terminalCaption)
-                            .foregroundColor(.terminalGreen)
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.terminalOrange)
                     }
                 }
             }
@@ -64,12 +60,6 @@ struct SessionListView: View {
             .task {
                 await viewModel.refreshSessions()
             }
-            .onChange(of: viewModel.pendingPrompts) { prompts in
-                // Auto-show prompt input when new prompt arrives
-                if let firstPrompt = prompts.first, selectedPrompt == nil {
-                    selectedPrompt = firstPrompt
-                }
-            }
         }
         .preferredColorScheme(.dark)
     }
@@ -83,54 +73,60 @@ private struct SessionsListContent: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("vibestatus")
-                        .font(.terminalLargeTitle)
-                        .foregroundColor(.terminalGreen)
-
-                    Text("claude code session monitor")
-                        .font(.terminalCaption)
-                        .foregroundColor(.terminalSecondary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 8)
-
-                // Active Sessions Section
-                TerminalSectionHeader(title: "active sessions")
-                    .padding(.horizontal, 20)
-
+            LazyVStack(alignment: .leading, spacing: 12) {
+                // Sessions
                 ForEach(viewModel.sessions) { session in
                     SessionRowView(session: session)
                         .onTapGesture {
                             // If session needs input, find and show the prompt
-                            if session.status == .needsInput,
-                               let prompt = viewModel.pendingPrompts.first(where: { $0.sessionId == session.id }) {
-                                selectedPrompt = prompt
+                            if session.status == .needsInput {
+                                // Extract session ID from filename (e.g., "vibestatus-abc123.json" -> "abc123")
+                                let sessionId = extractSessionId(from: session.id)
+                                print("[SessionListView] Tapped session with needsInput status")
+                                print("[SessionListView] Session ID (from filename): \(session.id) -> \(sessionId)")
+                                print("[SessionListView] Looking for prompt with sessionId: \(sessionId)")
+                                print("[SessionListView] Available prompts: \(viewModel.pendingPrompts.map { $0.sessionId })")
+
+                                if let prompt = viewModel.pendingPrompts.first(where: { $0.sessionId == sessionId }) {
+                                    print("[SessionListView] ✅ Found matching prompt, showing modal")
+                                    selectedPrompt = prompt
+                                } else {
+                                    print("[SessionListView] ❌ No matching prompt found")
+                                }
                             }
                         }
-
-                    TerminalDivider()
-                        .padding(.horizontal, 20)
                 }
 
-                // Last Sync Section
-                if let lastSync = viewModel.lastSyncDate {
+                // Loading / Sync Status Footer
+                if viewModel.isLoading {
                     HStack(spacing: 8) {
-                        Image(systemName: "clock")
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .terminalOrange))
+                            .scaleEffect(0.8)
+                        Text("Syncing...")
                             .font(.terminalCaption)
-                        Text("synced \(formatRelativeTime(lastSync))")
+                            .foregroundColor(.terminalSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 16)
+                }
+
+                // Error message if any
+                if let error = viewModel.errorMessage {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.terminalCaption)
+                        Text(error)
                             .font(.terminalCaption)
                     }
-                    .foregroundColor(.terminalSecondary)
+                    .foregroundColor(.terminalRed)
                     .padding(.horizontal, 20)
-                    .padding(.top, 24)
+                    .padding(.top, 8)
                 }
 
                 Spacer(minLength: 40)
             }
+            .padding(.top, 20)
         }
         .background(Color.terminalBackground)
     }
@@ -140,6 +136,22 @@ private struct SessionsListContent: View {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }
+
+    /// Extracts the session ID from a status filename
+    /// Example: "vibestatus-abc123.json" -> "abc123"
+    private func extractSessionId(from filename: String) -> String {
+        let prefix = "vibestatus-"
+        let suffix = ".json"
+
+        var result = filename
+        if result.hasPrefix(prefix) {
+            result = String(result.dropFirst(prefix.count))
+        }
+        if result.hasSuffix(suffix) {
+            result = String(result.dropLast(suffix.count))
+        }
+        return result
+    }
 }
 
 // MARK: - Session Row
@@ -148,92 +160,80 @@ struct SessionRowView: View {
     let session: VibeStatusShared.SessionInfo
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Status indicator
-            Text(statusSymbol)
-                .font(.terminalBody)
-                .foregroundColor(statusColor)
-                .frame(width: 24)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 12) {
+                // Status indicator dot
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 12, height: 12)
 
-            VStack(alignment: .leading, spacing: 6) {
                 // Project name
-                Text(session.project.lowercased())
+                Text(session.project)
                     .font(.terminalHeadline)
-                    .foregroundColor(.terminalGreen)
+                    .foregroundColor(.terminalText)
 
-                // Status line
-                HStack(spacing: 8) {
-                    Text(session.status.displayName.lowercased())
-                        .font(.terminalCaption)
-                        .foregroundColor(statusColor)
+                Spacer()
 
-                    Text("•")
-                        .foregroundColor(.terminalSecondary)
-
-                    Text(formatTimestamp(session.timestamp))
-                        .font(.terminalCaption)
-                        .foregroundColor(.terminalSecondary)
-                }
-
-                // Action needed badge
-                if session.status == .needsInput {
-                    Text("[ input required ]")
-                        .font(.terminalCaption)
-                        .foregroundColor(.terminalBlue)
-                        .padding(.top, 4)
-                }
+                // Status text
+                Text(statusText)
+                    .font(.terminalCaption)
+                    .foregroundColor(.terminalSecondary)
             }
+            .padding(.bottom, 8)
 
-            Spacer()
+            // Description/status message
+            Text(statusDescription)
+                .font(.terminalBody)
+                .foregroundColor(.terminalSecondary)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
         }
+        .padding(16)
+        .background(Color.cardBackground)
+        .cornerRadius(12)
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(Color.terminalBackground)
+        .padding(.vertical, 6)
     }
 
-    private var statusSymbol: String {
+    private var statusText: String {
         switch session.status {
-        case .working: return ">"
-        case .idle: return "*"
-        case .needsInput: return "?"
-        case .notRunning: return "-"
+        case .working: return "Working"
+        case .idle: return "Ready"
+        case .needsInput: return "Needs Input"
+        case .notRunning: return "Stopped"
+        }
+    }
+
+    private var statusDescription: String {
+        switch session.status {
+        case .working: return "Claude is working on your request..."
+        case .idle: return "Session is ready for input"
+        case .needsInput: return "Waiting for your response"
+        case .notRunning: return "Session has ended"
         }
     }
 
     private var statusColor: Color {
         switch session.status {
-        case .working: return .terminalOrange
-        case .idle: return .terminalGreen
-        case .needsInput: return .terminalBlue
-        case .notRunning: return .terminalSecondary
+        case .working: return .statusOrange
+        case .idle: return .statusGreen
+        case .needsInput: return .statusBlue
+        case .notRunning: return .statusGray
         }
-    }
-
-    private func formatTimestamp(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
-        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 
 // MARK: - Loading View
 
 private struct LoadingView: View {
-    @State private var dots = ""
-    let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
-
     var body: some View {
         VStack(spacing: 16) {
-            Text("loading\(dots)")
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .terminalOrange))
+                .scaleEffect(1.2)
+            Text("Loading...")
                 .font(.terminalBody)
-                .foregroundColor(.terminalGreen)
-                .onReceive(timer) { _ in
-                    if dots.count >= 3 {
-                        dots = ""
-                    } else {
-                        dots += "."
-                    }
-                }
+                .foregroundColor(.terminalSecondary)
         }
     }
 }
@@ -245,30 +245,28 @@ private struct ErrorView: View {
     let retry: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Text("!")
-                    .font(.terminalTitle)
-                    .foregroundColor(.terminalRed)
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.terminalRed)
 
-                Text("error")
-                    .font(.terminalHeadline)
-                    .foregroundColor(.terminalRed)
-            }
-
-            Text(message.lowercased())
-                .font(.terminalCaption)
+            Text(message)
+                .font(.terminalBody)
                 .foregroundColor(.terminalSecondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             Button(action: retry) {
-                Text("[ retry ]")
-                    .font(.terminalBody)
-                    .foregroundColor(.terminalGreen)
+                Text("Retry")
+                    .font(.terminalHeadline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(Color.terminalOrange)
+                    .cornerRadius(8)
             }
-            .padding(.top, 8)
         }
-        .padding(24)
+        .padding(32)
     }
 }
 
@@ -276,95 +274,55 @@ private struct ErrorView: View {
 
 private struct EmptyStateView: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("vibestatus")
-                        .font(.terminalLargeTitle)
-                        .foregroundColor(.terminalGreen)
+        VStack(spacing: 24) {
+            Spacer()
 
-                    Text("claude code session monitor")
-                        .font(.terminalCaption)
-                        .foregroundColor(.terminalSecondary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 8)
+            Image(systemName: "desktopcomputer")
+                .font(.system(size: 64))
+                .foregroundColor(.terminalOrange)
 
-                TerminalSectionHeader(title: "no active sessions")
-                    .padding(.horizontal, 20)
+            VStack(spacing: 12) {
+                Text("No Active Sessions")
+                    .font(.terminalTitle)
+                    .foregroundColor(.terminalText)
 
-                Text("start claude code on your mac to see sessions here.")
-                    .font(.terminalCaption)
+                Text("Start Claude Code on your Mac to see sessions here")
+                    .font(.terminalBody)
                     .foregroundColor(.terminalSecondary)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
-
-                TerminalSectionHeader(title: "setup")
-                    .padding(.horizontal, 20)
-
-                TerminalRow(
-                    icon: { Image(systemName: "icloud") },
-                    title: "icloud sync",
-                    subtitle: "enable ios sync in the macos menu bar app"
-                )
-                .padding(.horizontal, 20)
-
-                TerminalDivider()
-                    .padding(.horizontal, 20)
-
-                TerminalRow(
-                    icon: { Image(systemName: "person.circle") },
-                    title: "icloud account",
-                    subtitle: "sign into icloud on both devices"
-                )
-                .padding(.horizontal, 20)
-
-                TerminalDivider()
-                    .padding(.horizontal, 20)
-
-                TerminalRow(
-                    icon: { Image(systemName: "terminal") },
-                    title: "run claude code",
-                    subtitle: "start a session on your mac"
-                )
-                .padding(.horizontal, 20)
-
-                TerminalSectionHeader(title: "features")
-                    .padding(.horizontal, 20)
-
-                TerminalRow(
-                    icon: { Image(systemName: "bell") },
-                    title: "notifications",
-                    subtitle: "get notified when claude needs input"
-                )
-                .padding(.horizontal, 20)
-
-                TerminalDivider()
-                    .padding(.horizontal, 20)
-
-                TerminalRow(
-                    icon: { Image(systemName: "arrow.triangle.2.circlepath") },
-                    title: "real-time sync",
-                    subtitle: "sessions sync via icloud automatically"
-                )
-                .padding(.horizontal, 20)
-
-                TerminalDivider()
-                    .padding(.horizontal, 20)
-
-                TerminalRow(
-                    icon: { Image(systemName: "lock.shield") },
-                    title: "privacy",
-                    subtitle: "data stays in your private icloud"
-                )
-                .padding(.horizontal, 20)
-
-                Spacer(minLength: 40)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
             }
+
+            VStack(alignment: .leading, spacing: 16) {
+                InfoRow(icon: "icloud.fill", text: "Enable iOS sync in the macOS menu bar app")
+                InfoRow(icon: "person.circle.fill", text: "Sign into iCloud on both devices")
+                InfoRow(icon: "terminal.fill", text: "Run Claude Code to start a session")
+            }
+            .padding(.top, 16)
+
+            Spacer()
         }
+        .frame(maxWidth: .infinity)
         .background(Color.terminalBackground)
+    }
+}
+
+private struct InfoRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(.terminalOrange)
+                .frame(width: 24)
+
+            Text(text)
+                .font(.terminalCaption)
+                .foregroundColor(.terminalSecondary)
+        }
+        .padding(.horizontal, 32)
     }
 }
 

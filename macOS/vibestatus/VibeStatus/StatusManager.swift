@@ -53,6 +53,7 @@ final class StatusManager: ObservableObject {
 
     private var pollingTask: Task<Void, Never>?
     private var previousSessionStatuses: [String: VibeStatus] = [:]
+    private var updateCounter: Int = 0
 
     private init() {}
 
@@ -117,12 +118,23 @@ final class StatusManager: ObservableObject {
 
         let promptFiles = files.filter { $0.hasPrefix("vibestatus-prompt-") && $0.hasSuffix(".json") }
 
+        if !promptFiles.isEmpty {
+            print("[StatusManager] 📂 Found \(promptFiles.count) prompt file(s) to process")
+        }
+
         for file in promptFiles {
             let filePath = "/tmp/\(file)"
+            print("[StatusManager] Processing prompt file: \(file)")
 
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: filePath))
                 let promptData = try decoder.decode(PromptData.self, from: data)
+
+                print("[StatusManager] Parsed prompt data:")
+                print("  Session ID: \(promptData.session_id)")
+                print("  Project: \(promptData.project)")
+                print("  Message: \(promptData.prompt_message)")
+                print("  Notification type: \(promptData.notification_type)")
 
                 // Convert to PromptRecord
                 let formatter = ISO8601DateFormatter()
@@ -140,14 +152,19 @@ final class StatusManager: ObservableObject {
                     pid: promptData.pid
                 )
 
+                print("[StatusManager] Created PromptRecord with ID: \(promptRecord.id)")
+
                 // Upload to CloudKit
+                print("[StatusManager] ☁️  Uploading to CloudKit...")
                 await CloudKitManager.shared.uploadPrompt(promptRecord)
 
                 // Delete the local file after successful upload
+                print("[StatusManager] 🗑️  Deleting local prompt file...")
                 try? fileManager.removeItem(atPath: filePath)
+                print("[StatusManager] ✅ Prompt processing complete")
 
             } catch {
-                print("[StatusManager] Failed to process prompt file \(file): \(error)")
+                print("[StatusManager] ❌ Failed to process prompt file \(file): \(error)")
             }
         }
     }
@@ -260,12 +277,23 @@ final class StatusManager: ObservableObject {
             playNotificationSound(for: .idle)
         }
 
-        // Cleanup stale sessions from CloudKit periodically
-        // Only run cleanup every 10th update to avoid overhead
-        if result.sessions.count % 10 == 0 {
-            let activeIds = Set(result.sessions.keys)
+        // Cleanup stale sessions from CloudKit
+        updateCounter += 1
+        let activeIds = Set(result.sessions.keys)
+
+        // Run cleanup every 10th update to avoid overhead
+        if updateCounter % 10 == 0 {
+            print("[StatusManager] 🧹 Triggering periodic cleanup (update #\(updateCounter))")
             Task {
                 await CloudKitSyncManager.shared.cleanupStaleSessions(keeping: activeIds)
+            }
+        }
+
+        // Also run cleanup immediately when all sessions end (to quickly clear iOS)
+        if newSessions.isEmpty && sessions.count > 0 {
+            print("[StatusManager] 🧹 All sessions ended - triggering immediate cleanup")
+            Task {
+                await CloudKitSyncManager.shared.cleanupStaleSessions(keeping: Set())
             }
         }
     }

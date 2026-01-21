@@ -84,12 +84,14 @@ private struct SettingsSidebar: View {
 struct GeneralSettingsView: View {
     @StateObject private var setupManager = SetupManager.shared
     @StateObject private var syncManager = CloudKitSyncManager.shared
+    @StateObject private var responseHandler = ResponseHandler.shared
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 IntegrationSection(setupManager: setupManager)
                 iOSSyncSection(syncManager: syncManager)
+                iOSResponsePermissionSection(responseHandler: responseHandler)
                 StatusGuideSection()
 
                 if setupManager.isConfigured {
@@ -229,6 +231,115 @@ private struct iOSSyncSection: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+private struct iOSResponsePermissionSection: View {
+    @ObservedObject var responseHandler: ResponseHandler
+
+    var body: some View {
+        SettingsSection(title: "iOS Response Permission") {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Image(systemName: "iphone.and.arrow.forward")
+                        .font(.system(size: 24))
+                        .foregroundColor(.blue)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Respond from iPhone")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text("When Claude needs your input, respond directly from your iPhone. VibeStatus will automatically type your response in Terminal.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Divider()
+                    .padding(.vertical, 4)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Two Permissions Required")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        PermissionStepRow(
+                            number: "1",
+                            text: "Click 'Grant Permission' below to request Automation permission for Terminal and System Events"
+                        )
+                        PermissionStepRow(
+                            number: "2",
+                            text: "When you respond from iPhone for the first time, macOS will automatically ask for Accessibility permission"
+                        )
+                        PermissionStepRow(
+                            number: "3",
+                            text: "Both permissions are needed to automatically type your iPhone responses into Terminal"
+                        )
+                    }
+
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            _ = responseHandler.testAutomationPermission()
+                        }) {
+                            HStack {
+                                Image(systemName: "checkmark.shield")
+                                Text("Grant Permission")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
+                        .help("Request automation permission")
+
+                        Button(action: {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "gear")
+                                Text("Open System Settings")
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .help("Open Privacy & Security settings")
+                    }
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text("Tip: Grant Automation permission first, then respond from your iPhone to get the Accessibility permission prompt.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 8)
+                }
+            }
+        }
+    }
+}
+
+private struct PermissionStepRow: View {
+    let number: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(number)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(Color.blue))
+
+            Text(text)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

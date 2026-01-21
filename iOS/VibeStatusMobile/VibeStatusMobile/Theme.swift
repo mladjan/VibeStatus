@@ -1,58 +1,67 @@
 // Theme.swift
 // VibeStatusMobile
 //
-// Terminal-style theme for the app
+// Modern clean theme for the app
 
 import SwiftUI
 
-// MARK: - Terminal Colors
+// MARK: - App Colors
 
 extension Color {
-    /// Terminal green - primary accent color
-    static let terminalGreen = Color(red: 0.0, green: 0.9, blue: 0.2)
+    /// Primary accent color - warm copper/orange
+    static let terminalGreen = Color(red: 0.843, green: 0.478, blue: 0.322) // #D77A52
 
-    /// Dimmed green for secondary elements
-    static let terminalGreenDim = Color(red: 0.0, green: 0.6, blue: 0.15)
+    /// Dimmed accent for secondary elements
+    static let terminalGreenDim = Color(red: 0.7, green: 0.4, blue: 0.3)
 
-    /// Terminal background - pure black
-    static let terminalBackground = Color.black
+    /// App background - dark but not pure black
+    static let terminalBackground = Color(red: 0.1, green: 0.1, blue: 0.1)
 
-    /// Terminal secondary text - gray
-    static let terminalSecondary = Color(white: 0.5)
+    /// Secondary text - medium gray
+    static let terminalSecondary = Color(white: 0.6)
 
-    /// Terminal red for errors/warnings
+    /// Red for errors/warnings
     static let terminalRed = Color(red: 1.0, green: 0.3, blue: 0.3)
 
-    /// Terminal orange for working status
-    static let terminalOrange = Color(red: 1.0, green: 0.6, blue: 0.0)
+    /// Orange/copper for working status and accents
+    static let terminalOrange = Color(red: 0.843, green: 0.478, blue: 0.322) // #D77A52
 
-    /// Terminal blue for needs input
-    static let terminalBlue = Color(red: 0.3, green: 0.6, blue: 1.0)
+    /// Blue for needs input
+    static let terminalBlue = Color(red: 0.4, green: 0.7, blue: 1.0)
 
-    /// Terminal text - light gray for readable body text
-    static let terminalText = Color(white: 0.9)
+    /// Primary text - white
+    static let terminalText = Color.white
+
+    /// Card background - slightly lighter than app background
+    static let cardBackground = Color(red: 0.15, green: 0.15, blue: 0.15)
+
+    /// Status indicator colors
+    static let statusGreen = Color(red: 0.3, green: 0.85, blue: 0.4) // Bright green dot
+    static let statusOrange = Color(red: 0.843, green: 0.478, blue: 0.322) // Orange dot
+    static let statusBlue = Color(red: 0.4, green: 0.7, blue: 1.0) // Blue dot
+    static let statusGray = Color(white: 0.5) // Gray dot
 }
 
-// MARK: - Terminal Fonts
+// MARK: - App Fonts
 
 extension Font {
-    /// Monospace font for body text
-    static let terminalBody = Font.system(.body, design: .monospaced)
+    /// Regular body text
+    static let terminalBody = Font.system(.body, design: .rounded)
 
-    /// Monospace font for headlines
-    static let terminalHeadline = Font.system(.headline, design: .monospaced)
+    /// Headline text
+    static let terminalHeadline = Font.system(.headline, design: .rounded).weight(.semibold)
 
-    /// Monospace font for titles
-    static let terminalTitle = Font.system(.title, design: .monospaced).bold()
+    /// Title text
+    static let terminalTitle = Font.system(.title2, design: .rounded).weight(.bold)
 
-    /// Monospace font for large titles
-    static let terminalLargeTitle = Font.system(.largeTitle, design: .monospaced).bold()
+    /// Large title
+    static let terminalLargeTitle = Font.system(.largeTitle, design: .rounded).weight(.bold)
 
-    /// Monospace font for captions
-    static let terminalCaption = Font.system(.caption, design: .monospaced)
+    /// Small caption text
+    static let terminalCaption = Font.system(.caption, design: .rounded)
 
-    /// Monospace font for section headers
-    static let terminalSection = Font.system(.subheadline, design: .monospaced).bold()
+    /// Section header
+    static let terminalSection = Font.system(.subheadline, design: .rounded).weight(.semibold)
 }
 
 // MARK: - Terminal View Modifiers

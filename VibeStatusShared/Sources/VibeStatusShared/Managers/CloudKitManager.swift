@@ -267,21 +267,32 @@ public class CloudKitManager: ObservableObject {
     /// Uploads a prompt to CloudKit (macOS → Cloud)
     /// Called when Claude needs input from user
     public func uploadPrompt(_ prompt: PromptRecord) async {
+        logger.info("📤 [CloudKitManager] uploadPrompt called")
+        logger.info("  Prompt ID: \(prompt.id)")
+        logger.info("  Session ID: \(prompt.sessionId)")
+        logger.info("  Project: \(prompt.project)")
+        logger.info("  Message: \(prompt.promptMessage)")
+
         guard iCloudAvailable else {
-            logger.warning("Cannot upload prompt - iCloud not available")
+            logger.warning("❌ Cannot upload prompt - iCloud not available")
             return
         }
 
+        logger.info("✅ iCloud is available, proceeding with upload")
+
         do {
             let record = prompt.toCKRecord()
-            _ = try await privateDatabase.save(record)
-            logger.info("Successfully uploaded prompt: \(prompt.id)")
+            logger.info("💾 Saving prompt to CloudKit...")
+            let savedRecord = try await privateDatabase.save(record)
+            logger.info("✅ Successfully uploaded prompt: \(prompt.id)")
+            logger.info("  Record ID: \(savedRecord.recordID.recordName)")
 
             await MainActor.run {
                 lastSyncDate = Date()
             }
         } catch {
-            logger.error("Failed to upload prompt: \(error.localizedDescription)")
+            logger.error("❌ Failed to upload prompt: \(error.localizedDescription)")
+            logger.error("  Error details: \(String(describing: error))")
             await MainActor.run {
                 syncError = error
             }
@@ -327,24 +338,38 @@ public class CloudKitManager: ObservableObject {
     /// Submits a response to a prompt (iOS → Cloud)
     /// Updates the prompt record with user's response
     public func submitResponse(promptId: String, responseText: String, deviceName: String) async -> Bool {
+        logger.info("📤 [CloudKitManager] submitResponse called")
+        logger.info("  Prompt ID: \(promptId)")
+        logger.info("  Response text: '\(responseText)'")
+        logger.info("  Device name: \(deviceName)")
+
         guard iCloudAvailable else {
-            logger.warning("Cannot submit response - iCloud not available")
+            logger.warning("❌ Cannot submit response - iCloud not available")
             return false
         }
 
+        logger.info("✅ iCloud is available, proceeding with submission")
+
         do {
             // Fetch the existing prompt record
+            logger.info("🔍 Fetching prompt record from CloudKit...")
             let recordID = CKRecord.ID(recordName: promptId)
             let record = try await privateDatabase.record(for: recordID)
+            logger.info("✅ Found prompt record: \(record.recordID.recordName)")
 
             // Update with response
+            logger.info("📝 Updating record with response...")
             record["responseText"] = responseText as CKRecordValue
             record["respondedAt"] = Date() as CKRecordValue
             record["respondedFromDevice"] = deviceName as CKRecordValue
             record["responded"] = 1 as CKRecordValue // Mark as responded
 
-            _ = try await privateDatabase.save(record)
-            logger.info("Successfully submitted response for prompt: \(promptId)")
+            logger.info("💾 Saving updated record to CloudKit...")
+            let savedRecord = try await privateDatabase.save(record)
+            logger.info("✅ Successfully saved response to CloudKit")
+            logger.info("  Record ID: \(savedRecord.recordID.recordName)")
+            logger.info("  Response text: '\(savedRecord["responseText"] as? String ?? "nil")'")
+            logger.info("  Responded flag: \(savedRecord["responded"] as? Int ?? 0)")
 
             await MainActor.run {
                 lastSyncDate = Date()
@@ -353,7 +378,8 @@ public class CloudKitManager: ObservableObject {
             return true
 
         } catch {
-            logger.error("Failed to submit response: \(error.localizedDescription)")
+            logger.error("❌ Failed to submit response: \(error.localizedDescription)")
+            logger.error("  Error details: \(String(describing: error))")
             await MainActor.run {
                 syncError = error
             }
@@ -364,8 +390,10 @@ public class CloudKitManager: ObservableObject {
     /// Fetches responses to prompts (macOS fetches from Cloud)
     /// Returns prompts that have been responded to
     public func fetchResponses(forSessionId sessionId: String) async -> [PromptRecord] {
+        logger.info("📥 [CloudKitManager] fetchResponses called for session: \(sessionId)")
+
         guard iCloudAvailable else {
-            logger.warning("Cannot fetch responses - iCloud not available")
+            logger.warning("❌ Cannot fetch responses - iCloud not available")
             return []
         }
 
@@ -375,13 +403,17 @@ public class CloudKitManager: ObservableObject {
             let query = CKQuery(recordType: PromptRecord.recordType, predicate: predicate)
             query.sortDescriptors = [NSSortDescriptor(key: "respondedAt", ascending: false)]
 
+            logger.info("🔍 Querying CloudKit for responses...")
             let results = try await privateDatabase.records(matching: query)
             let prompts = results.matchResults.compactMap { (_, result) -> PromptRecord? in
                 guard case .success(let record) = result else { return nil }
                 return PromptRecord(from: record)
             }
 
-            logger.info("Fetched \(prompts.count) responses for session \(sessionId)")
+            logger.info("✅ Fetched \(prompts.count) responses for session \(sessionId)")
+            for prompt in prompts {
+                logger.info("  - Prompt ID: \(prompt.id), Response: '\(prompt.responseText ?? "nil")'")
+            }
             return prompts
 
         } catch {

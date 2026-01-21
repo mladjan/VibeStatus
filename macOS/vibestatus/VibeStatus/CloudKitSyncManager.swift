@@ -117,24 +117,43 @@ final class CloudKitSyncManager: ObservableObject {
     /// Deletes stale sessions from CloudKit
     /// - Parameter activeSessionIds: IDs of sessions that are still active
     func cleanupStaleSessions(keeping activeSessionIds: Set<String>) async {
-        guard syncEnabled else { return }
+        guard syncEnabled else {
+            logger.debug("Cleanup skipped - sync not enabled")
+            return
+        }
 
-        guard CloudKitManager.shared.iCloudAvailable else { return }
+        guard CloudKitManager.shared.iCloudAvailable else {
+            logger.debug("Cleanup skipped - iCloud not available")
+            return
+        }
+
+        logger.info("🧹 Starting session cleanup...")
+        logger.info("  Active sessions: \(activeSessionIds.count)")
 
         // Fetch all sessions - will fail silently if queryable not enabled
         let allSessions = await CloudKitManager.shared.fetchSessions()
+        logger.info("  Sessions in CloudKit: \(allSessions.count)")
 
         // If fetch failed (returns empty array), skip cleanup
         // This prevents errors when CloudKit schema isn't configured yet
-        guard !allSessions.isEmpty else { return }
+        guard !allSessions.isEmpty else {
+            logger.debug("No sessions in CloudKit, skipping cleanup")
+            return
+        }
 
         let staleSessionIds = allSessions
             .filter { !activeSessionIds.contains($0.id) }
             .map { $0.id }
 
         if !staleSessionIds.isEmpty {
+            logger.info("  Found \(staleSessionIds.count) stale sessions to delete:")
+            for id in staleSessionIds {
+                logger.info("    - \(id)")
+            }
             await CloudKitManager.shared.deleteSessions(staleSessionIds)
-            logger.info("Cleaned up \(staleSessionIds.count) stale sessions")
+            logger.info("✅ Cleaned up \(staleSessionIds.count) stale sessions from CloudKit")
+        } else {
+            logger.info("  No stale sessions found")
         }
     }
 
