@@ -14,9 +14,22 @@
 		71B229DF2F1D42F400A332D4 /* VibeStatusMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeStatusMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7122F1B22F21126F00450F6F /* Exceptions for "VibeStatusMobile" folder in "VibeStatusMobile" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 71B229DE2F1D42F400A332D4 /* VibeStatusMobile */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		71B229E12F1D42F400A332D4 /* VibeStatusMobile */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7122F1B22F21126F00450F6F /* Exceptions for "VibeStatusMobile" folder in "VibeStatusMobile" target */,
+			);
 			path = VibeStatusMobile;
 			sourceTree = "<group>";
 		};
@@ -264,6 +277,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VibeStatusMobile/Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "VibeStatus uses the local network to detect when your Mac is nearby, allowing it to automatically silence notifications when you're at your desk.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -310,6 +325,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VibeStatusMobile/Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "VibeStatus uses the local network to detect when your Mac is nearby, allowing it to automatically silence notifications when you're at your desk.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

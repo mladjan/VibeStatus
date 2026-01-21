@@ -29,6 +29,7 @@ final class ProximityDetector: ObservableObject {
     private var browser: NWBrowser?
 
     /// Service type to discover (must match Mac's service type)
+    /// Note: NWBrowser expects no trailing dot, even though NetService uses one
     private let serviceType = "_vibestatus._tcp"
 
     /// Whether discovery is currently active
@@ -40,9 +41,14 @@ final class ProximityDetector: ObservableObject {
     /// Custom log prefix for easy filtering
     private let logPrefix = "[🔇 PROXIMITY]"
 
+    /// Timer for periodic proximity checks
+    private var periodicCheckTimer: Timer?
+
     // MARK: - Initialization
 
-    private init() {}
+    private init() {
+        startPeriodicChecks()
+    }
 
     // MARK: - Public API
 
@@ -131,6 +137,30 @@ final class ProximityDetector: ObservableObject {
         }
     }
 
+    /// Start periodic proximity checks (every 5 minutes)
+    func startPeriodicChecks() {
+        print("\(logPrefix) Starting periodic proximity checks")
+
+        // Do initial check
+        Task {
+            _ = await checkMacProximity()
+        }
+
+        // Schedule periodic checks every 5 minutes
+        periodicCheckTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                _ = await self?.checkMacProximity()
+            }
+        }
+    }
+
+    /// Stop periodic proximity checks
+    func stopPeriodicChecks() {
+        print("\(logPrefix) Stopping periodic proximity checks")
+        periodicCheckTimer?.invalidate()
+        periodicCheckTimer = nil
+    }
+
     // MARK: - Private Methods
 
     private func handleBrowserStateChange(_ newState: NWBrowser.State) {
@@ -145,7 +175,7 @@ final class ProximityDetector: ObservableObject {
             servicesFound = 0
         case .cancelled:
             print("\(logPrefix) Browser cancelled")
-            isMacNearby = false
+            // Don't reset isMacNearby - keep last known state
         case .waiting(let error):
             print("\(logPrefix) ⏳ Browser waiting: \(error)")
         default:

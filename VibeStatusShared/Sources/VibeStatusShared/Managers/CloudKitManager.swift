@@ -371,6 +371,13 @@ public class CloudKitManager: ObservableObject {
             logger.info("  Response text: '\(savedRecord["responseText"] as? String ?? "nil")'")
             logger.info("  Responded flag: \(savedRecord["responded"] as? Int ?? 0)")
 
+            // Wait a moment for macOS to fetch the response
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+
+            // Delete the prompt from CloudKit to keep database clean
+            logger.info("🗑️ Deleting prompt after response...")
+            await deletePrompt(promptId)
+
             await MainActor.run {
                 lastSyncDate = Date()
             }
@@ -435,6 +442,41 @@ public class CloudKitManager: ObservableObject {
             logger.info("Successfully deleted prompt: \(promptId)")
         } catch {
             logger.error("Failed to delete prompt: \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes old prompts to keep CloudKit database clean
+    /// Removes prompts older than 7 days, regardless of response status
+    public func cleanupOldPrompts() async {
+        guard iCloudAvailable else { return }
+
+        do {
+            // Calculate cutoff date (7 days ago)
+            let cutoffDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+
+            // Query for old prompts
+            let predicate = NSPredicate(format: "timestamp < %@", cutoffDate as CVarArg)
+            let query = CKQuery(recordType: PromptRecord.recordType, predicate: predicate)
+
+            logger.info("🧹 Cleaning up prompts older than \(cutoffDate)...")
+            let results = try await privateDatabase.records(matching: query)
+
+            var deletedCount = 0
+            for (recordID, result) in results.matchResults {
+                if case .success = result {
+                    do {
+                        _ = try await privateDatabase.deleteRecord(withID: recordID)
+                        deletedCount += 1
+                    } catch {
+                        logger.error("Failed to delete old prompt \(recordID.recordName): \(error.localizedDescription)")
+                    }
+                }
+            }
+
+            logger.info("✅ Cleaned up \(deletedCount) old prompts")
+
+        } catch {
+            logger.error("Failed to cleanup old prompts: \(error.localizedDescription)")
         }
     }
 

@@ -38,6 +38,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             await CloudKitManager.shared.setupSubscription()
         }
 
+        // Cleanup old prompts from CloudKit (older than 7 days)
+        Task {
+            await CloudKitManager.shared.cleanupOldPrompts()
+        }
+
         return true
     }
 

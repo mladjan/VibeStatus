@@ -9,7 +9,7 @@ import Foundation
 
 /// Manages Bonjour service advertisement for local network discovery
 @MainActor
-final class BonjourService {
+final class BonjourService: NSObject, NetServiceDelegate {
     static let shared = BonjourService()
 
     // MARK: - Properties
@@ -32,7 +32,9 @@ final class BonjourService {
 
     // MARK: - Initialization
 
-    private init() {}
+    private override init() {
+        super.init()
+    }
 
     // MARK: - Public API
 
@@ -47,21 +49,23 @@ final class BonjourService {
         print("\(logPrefix) Service name: '\(serviceName)'")
         print("\(logPrefix) Service type: \(serviceType)")
 
-        // Create NetService with a dummy port (0 = system assigns)
-        // We don't actually open a port, just advertise presence
-        netService = NetService(domain: "", type: serviceType, name: serviceName, port: 0)
+        // Create NetService with a fixed port for proximity detection
+        // We don't actually listen on this port, just advertise presence
+        // Using port 9876 as a fixed identifier for VibeStatus
+        netService = NetService(domain: "", type: serviceType, name: serviceName, port: 9876)
 
         guard let service = netService else {
             print("\(logPrefix) ❌ Failed to create NetService")
             return
         }
 
+        // Set delegate to monitor publication status
+        service.delegate = self
+
         // Publish the service
+        print("\(logPrefix) Publishing service...")
         service.publish()
         isAdvertising = true
-
-        print("\(logPrefix) ✅ Bonjour service started - iOS devices can now detect this Mac")
-        print("\(logPrefix) iOS devices on same network will see: '\(serviceName)'")
     }
 
     /// Stop advertising the Bonjour service
@@ -76,5 +80,43 @@ final class BonjourService {
         isAdvertising = false
 
         print("\(logPrefix) ⏹️ Bonjour service stopped")
+    }
+
+    // MARK: - NetServiceDelegate
+
+    nonisolated func netServiceDidPublish(_ sender: NetService) {
+        Task { @MainActor in
+            print("\(logPrefix) ✅ Service published successfully")
+            print("\(logPrefix) iOS devices can now discover: '\(sender.name)'")
+        }
+    }
+
+    nonisolated func netService(_ sender: NetService, didNotPublish errorDict: [String: NSNumber]) {
+        Task { @MainActor in
+            print("\(logPrefix) ❌ Failed to publish service")
+            print("\(logPrefix) Error: \(errorDict)")
+
+            // Check specific error codes
+            if let errorCode = errorDict[NetService.errorCode] {
+                switch errorCode.intValue {
+                case NetService.ErrorCode.collisionError.rawValue:
+                    print("\(logPrefix) Error: Name collision - another service with same name exists")
+                case NetService.ErrorCode.notFoundError.rawValue:
+                    print("\(logPrefix) Error: Service not found")
+                case NetService.ErrorCode.activityInProgress.rawValue:
+                    print("\(logPrefix) Error: Activity in progress")
+                default:
+                    print("\(logPrefix) Error code: \(errorCode)")
+                }
+            }
+
+            isAdvertising = false
+        }
+    }
+
+    nonisolated func netServiceDidStop(_ sender: NetService) {
+        Task { @MainActor in
+            print("\(logPrefix) Service stopped")
+        }
     }
 }

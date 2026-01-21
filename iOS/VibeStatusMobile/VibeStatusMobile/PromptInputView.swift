@@ -156,44 +156,70 @@ private struct TranscriptSection: View {
         // Process last few messages (up to 3 for context)
         for line in lines.suffix(3) {
             guard let data = line.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let type = json["type"] as? String else {
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 continue
             }
 
+            // Try to extract message based on the structure
             var messageText = ""
             var roleIndicator = ""
             var roleColor: Color = .terminalText
 
-            if type == "user" {
-                // Extract user message
-                if let message = json["message"] as? [String: Any],
-                   let content = message["content"] as? [[String: Any]] {
-                    for block in content {
-                        if block["type"] as? String == "text",
-                           let text = block["text"] as? String {
-                            messageText = text
-                            break
-                        }
-                    }
-                }
-                roleIndicator = "user:"
-                roleColor = .terminalBlue
+            // Check for Claude Code API format: {"type": "message", "role": "...", "content": [...]}
+            if let role = json["role"] as? String,
+               let content = json["content"] as? [[String: Any]] {
 
-            } else if type == "assistant" {
-                // Extract assistant message
-                if let message = json["message"] as? [String: Any],
-                   let content = message["content"] as? [[String: Any]] {
-                    for block in content {
-                        if block["type"] as? String == "text",
-                           let text = block["text"] as? String {
-                            messageText = text
-                            break
-                        }
+                // Extract only text blocks (skip thinking, tool_use, etc.)
+                var textParts: [String] = []
+                for block in content {
+                    if block["type"] as? String == "text",
+                       let text = block["text"] as? String {
+                        textParts.append(text)
                     }
                 }
-                roleIndicator = "assistant:"
-                roleColor = .terminalGreen
+
+                if !textParts.isEmpty {
+                    messageText = textParts.joined(separator: "\n\n")
+
+                    if role == "user" {
+                        roleIndicator = "user:"
+                        roleColor = .terminalBlue
+                    } else if role == "assistant" {
+                        roleIndicator = "assistant:"
+                        roleColor = .terminalGreen
+                    }
+                }
+            }
+            // Legacy format check: {"type": "user/assistant", "message": {...}}
+            else if let type = json["type"] as? String {
+                if type == "user" {
+                    if let message = json["message"] as? [String: Any],
+                       let content = message["content"] as? [[String: Any]] {
+                        for block in content {
+                            if block["type"] as? String == "text",
+                               let text = block["text"] as? String {
+                                messageText = text
+                                break
+                            }
+                        }
+                    }
+                    roleIndicator = "user:"
+                    roleColor = .terminalBlue
+
+                } else if type == "assistant" {
+                    if let message = json["message"] as? [String: Any],
+                       let content = message["content"] as? [[String: Any]] {
+                        for block in content {
+                            if block["type"] as? String == "text",
+                               let text = block["text"] as? String {
+                                messageText = text
+                                break
+                            }
+                        }
+                    }
+                    roleIndicator = "assistant:"
+                    roleColor = .terminalGreen
+                }
             }
 
             if !messageText.isEmpty {
@@ -207,12 +233,13 @@ private struct TranscriptSection: View {
             }
         }
 
-        // If no messages parsed, show a simple fallback
+        // If no messages parsed, try to show something useful
         if messages.isEmpty {
+            // Don't show raw JSON - show a helpful message instead
             messages.append(FormattedMessage(
                 roleIndicator: "context:",
                 roleColor: .terminalSecondary,
-                text: String(excerpt.prefix(300))
+                text: "Recent conversation context not available"
             ))
         }
 

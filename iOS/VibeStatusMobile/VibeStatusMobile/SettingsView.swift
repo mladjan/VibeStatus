@@ -12,7 +12,6 @@ struct SettingsView: View {
     @StateObject private var proximityDetector = ProximityDetector.shared
     @Environment(\.dismiss) private var dismiss
     @State private var silenceWhenNearby: Bool = NotificationManager.shared.silenceWhenNearby
-    @State private var isTestingProximity: Bool = false
 
     var body: some View {
         NavigationView {
@@ -187,31 +186,6 @@ struct SettingsView: View {
                                         .padding(12)
                                         .background(Color.cardBackground)
                                         .cornerRadius(8)
-
-                                        Button(action: {
-                                            Task {
-                                                isTestingProximity = true
-                                                _ = await proximityDetector.checkMacProximity()
-                                                isTestingProximity = false
-                                            }
-                                        }) {
-                                            HStack {
-                                                if isTestingProximity {
-                                                    ProgressView()
-                                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                                        .scaleEffect(0.8)
-                                                } else {
-                                                    Image(systemName: "antenna.radiowaves.left.and.right")
-                                                }
-                                                Text(isTestingProximity ? "Searching..." : "Test Mac Detection")
-                                            }
-                                            .frame(maxWidth: .infinity)
-                                            .padding(12)
-                                            .background(Color.terminalOrange)
-                                            .foregroundColor(.white)
-                                            .cornerRadius(8)
-                                        }
-                                        .disabled(isTestingProximity)
                                     }
                                     .padding(.horizontal, 20)
                                     .padding(.bottom, 8)
