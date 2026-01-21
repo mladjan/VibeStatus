@@ -161,7 +161,7 @@ struct SettingsView: View {
 
                                         HStack(spacing: 12) {
                                             Circle()
-                                                .fill(proximityDetector.isMacNearby ? .statusGreen : .terminalSecondary)
+                                                .fill(proximityDetector.isMacNearby ? Color.statusGreen : Color.terminalSecondary)
                                                 .frame(width: 12, height: 12)
 
                                             VStack(alignment: .leading, spacing: 4) {
