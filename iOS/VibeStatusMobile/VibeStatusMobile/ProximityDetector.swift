@@ -7,6 +7,7 @@
 
 import Foundation
 import Network
+import Combine
 
 /// Manages Bonjour service discovery to detect Mac proximity
 @MainActor

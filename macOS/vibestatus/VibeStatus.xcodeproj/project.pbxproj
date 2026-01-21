@@ -15,6 +15,7 @@
 		5AFA32077A3F5C28A43F7446 /* SetupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF86F6EB9C44E4D2B358120C /* SetupManager.swift */; };
 		7122EFC82F1D526900450F6F /* VibeStatusShared in Frameworks */ = {isa = PBXBuildFile; productRef = 7122EFC72F1D526900450F6F /* VibeStatusShared */; };
 		7122F1A52F20E68A00450F6F /* ResponseHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7122F1A42F20E68A00450F6F /* ResponseHandler.swift */; };
+		7122F1AD2F210E3F00450F6F /* BonjourService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7122F1AC2F210E3F00450F6F /* BonjourService.swift */; };
 		71B229FF2F1D50D900A332D4 /* CloudKitSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B229FE2F1D50D900A332D4 /* CloudKitSyncManager.swift */; };
 		738399C69C702A76F4C53F8A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 140DA74FA64F361E90C3068C /* Assets.xcassets */; };
 		7C37E0DE42C0DB307EF8369B /* vibestatus.png in Resources */ = {isa = PBXBuildFile; fileRef = B0A6A2FB778A7248D78C2BD4 /* vibestatus.png */; };
@@ -33,6 +34,7 @@
 		60A48C8FDA2A1FE59903E641 /* WidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetView.swift; sourceTree = "<group>"; };
 		6B031F1A2CF365B846E88B51 /* VibeStatus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VibeStatus.entitlements; sourceTree = "<group>"; };
 		7122F1A42F20E68A00450F6F /* ResponseHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseHandler.swift; sourceTree = "<group>"; };
+		7122F1AC2F210E3F00450F6F /* BonjourService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BonjourService.swift; sourceTree = "<group>"; };
 		71B229FE2F1D50D900A332D4 /* CloudKitSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSyncManager.swift; sourceTree = "<group>"; };
 		8A463B145CA42C5E50923202 /* StatusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusManager.swift; sourceTree = "<group>"; };
 		A19C86FF5E455EA2DBD30C0F /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 				71B229FE2F1D50D900A332D4 /* CloudKitSyncManager.swift */,
 				8A463B145CA42C5E50923202 /* StatusManager.swift */,
 				D70E5CB1FF7DBC83116DA6DA /* Types.swift */,
+				7122F1AC2F210E3F00450F6F /* BonjourService.swift */,
 				6B031F1A2CF365B846E88B51 /* VibeStatus.entitlements */,
 				BC433EF6F9DD14A5BF442D65 /* VibeStatusApp.swift */,
 				60A48C8FDA2A1FE59903E641 /* WidgetView.swift */,
@@ -221,6 +224,7 @@
 				5AFA32077A3F5C28A43F7446 /* SetupManager.swift in Sources */,
 				F877D28594870DBF61BFDE74 /* SetupView.swift in Sources */,
 				3DA544F7C18DE916BA35D611 /* StatusManager.swift in Sources */,
+				7122F1AD2F210E3F00450F6F /* BonjourService.swift in Sources */,
 				5895C989E31D69E6907FBF8D /* Types.swift in Sources */,
 				71B229FF2F1D50D900A332D4 /* CloudKitSyncManager.swift in Sources */,
 				F39D6289237B96B70BF1B4B9 /* VibeStatusApp.swift in Sources */,
