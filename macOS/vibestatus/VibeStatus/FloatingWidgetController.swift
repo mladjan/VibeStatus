@@ -244,6 +244,13 @@ final class FloatingWidgetController: ObservableObject {
 
         let widgetView = ObservableWidgetView(viewModel: viewModel)
         let hostingView = NSHostingView(rootView: widgetView)
+
+        // Apply corner radius at NSView level to prevent SwiftUI clipping issues
+        // This ensures rounded corners persist during updates and resizing
+        hostingView.wantsLayer = true
+        hostingView.layer?.cornerRadius = WidgetLayoutConstants.cornerRadius
+        hostingView.layer?.masksToBounds = true
+
         panel?.contentView = hostingView
 
         updatePosition()
@@ -279,6 +286,11 @@ final class FloatingWidgetController: ObservableObject {
 
         frame.size = newSize
         panel.setFrame(frame, display: true, animate: true)
+
+        // Reapply corner radius after resizing to ensure it persists
+        if let hostingView = panel.contentView {
+            hostingView.layer?.cornerRadius = WidgetLayoutConstants.cornerRadius
+        }
     }
 
     private func calculateSize() -> NSSize {
